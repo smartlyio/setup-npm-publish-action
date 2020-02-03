@@ -1,0 +1,21 @@
+name: Setup
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: test-branch
+          persist-credentials: false
+      - uses: smartlyio/setup-npm-publish-action@dev
+      - run: |
+          echo "THIS IS A NEW FILE" > new_file
+          git add new_file
+          git commit -m "Added a new file"
+          git push origin test-branch
