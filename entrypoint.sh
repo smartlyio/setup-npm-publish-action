@@ -13,8 +13,7 @@ fi
 # The script is run as root so we need to allow npm to execute scripts as root.
 echo "unsafe-perm = true" >> ~/.npmrc
 
-# Setup SSH keys so we can push lerna commits and tags to master branch
-
+# Setup SSH keys so we can push commits and tags to master branch
 mkdir -p $GITHUB_WORKSPACE/.ssh
 ssh-keyscan -t rsa github.com > $GITHUB_WORKSPACE/.ssh/known_hosts
 echo "$GIT_DEPLOY_KEY" > $GITHUB_WORKSPACE/.ssh/id_rsa
