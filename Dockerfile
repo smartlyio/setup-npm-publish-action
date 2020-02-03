@@ -7,9 +7,12 @@ LABEL homepage="http://github.com/setup-npm-publish-action"
 LABEL com.github.actions.name="Setup npm publish action"
 LABEL com.github.actions.icon="package"
 
-USER runner
-
 RUN apk add --no-cache bash git openssh
+
+# User user that has the same uid as Github's virtual runner. This causes the generated files to have assumed
+# permissions.
+RUN adduser -S runner -u 1001
+USER runner
 
 COPY entrypoint.sh /entrypoint.sh
 
