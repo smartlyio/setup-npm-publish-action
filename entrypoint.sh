@@ -20,7 +20,6 @@ echo "$GIT_DEPLOY_KEY" > $GITHUB_WORKSPACE/.ssh/id_rsa
 chmod 400 $GITHUB_WORKSPACE/.ssh/id_rsa
 
 # Setup git
-
 git config user.email "$INPUT_EMAIL"
 git config user.name "$INPUT_USERNAME"
 git config core.sshCommand 'ssh -i $GITHUB_WORKSPACE/.ssh/id_rsa -o UserKnownHostsFile=$GITHUB_WORKSPACE/.ssh/known_hosts'
