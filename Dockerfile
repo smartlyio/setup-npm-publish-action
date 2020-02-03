@@ -7,6 +7,8 @@ LABEL homepage="http://github.com/setup-npm-publish-action"
 LABEL com.github.actions.name="Setup npm publish action"
 LABEL com.github.actions.icon="package"
 
+USER runner
+
 RUN apk add --no-cache bash git openssh
 
 COPY entrypoint.sh /entrypoint.sh
