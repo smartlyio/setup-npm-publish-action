@@ -1,23 +1,10 @@
-# Hello world docker action
 
-This action prints "Hello World" to the log or "Hello" + the name of a person to greet. To learn how this action was built, see "[Creating a Docker container action](https://help.github.com/en/articles/creating-a-docker-container-action)" in the GitHub Help documentation.
+# setup-npm-publish-action
+
+Action to setup npm and git for npm publish. It appends authentication tokens to local .npmrc file and configures git access so it can commit and push to branches. Git with SSH authentication is used so that it is possible to push to protected branches.
 
 ## Inputs
 
-### `who-to-greet`
+TODO
 
-**Required** The name of the person to greet. Default `"World"`.
-
-## Outputs
-
-### `time`
-
-The time we greeted you.
-
-## Example usage
-
-```yaml
-uses: actions/hello-world-docker-action@master
-with:
-  who-to-greet: 'Mona the Octocat'
-```
+## Environment variables
