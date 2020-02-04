@@ -5,17 +5,17 @@ Action to setup npm and git for npm publish. It appends authentication tokens to
 
 ## Inputs
 
-| Input    | Required  | Description
-|--------------------------------------------------
-| email    | no        | Email to use with git
-| username | no        | Username to use with git
+| Input    | Required  | Description              |
+|----------|-----------|--------------------------|
+| email    | no        | Email to use with git    |
+| username | no        | Username to use with git |
 
 ## Environment variables
 
 | Variable          | Required  | Description
-|----------------------------------------------------------------------------------------------
-| GIT_DEPLOY_KEY    | yes       | RSA key to authenticate to git repository
-| AUTH_TOKEN_STRING | no        | Authentication string that is injected to local .npmrc file
+|-------------------|-----------|-------------------------------------------------------------|
+| GIT_DEPLOY_KEY    | yes       | RSA key to authenticate to git repository                   |
+| AUTH_TOKEN_STRING | no        | Authentication string that is injected to local .npmrc file |
 
 
 ## Usage example
