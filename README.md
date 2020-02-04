@@ -16,3 +16,17 @@ Action to setup npm and git for npm publish. It appends authentication tokens to
 |----------------------------------------------------------------------------------------------
 | GIT_DEPLOY_KEY    | yes       | RSA key to authenticate to git repository
 | AUTH_TOKEN_STRING | no        | Authentication string that is injected to local .npmrc file
+
+
+## Usage example
+
+The action is used as follows:
+
+```yaml
+- uses: smartlyio/setup-npm-publish-action@v1
+  env:
+    AUTH_TOKEN_STRING: |
+      @smartly:registry = https://npm.fury.io/smartly/
+      ${{ format('//npm.fury.io/smartly/:_authToken={0}', secrets.GEMFURY_TOKEN) }}
+    GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+```
