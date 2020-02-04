@@ -2,11 +2,11 @@ name: 'Setup npm publish action'
 description: 'Setup npm and git for publishing to npm registry'
 inputs:
   email:
-    description: "Email to use in lerna commits"
+    description: "Email to use with git"
     required: false
     default: 'bot@setup-npm-publish-action'
   username:
-    description: 'User  name to use in lerna commits'
+    description: 'Username to use with git'
     required: false
     default: 'Github Action'
 runs:
