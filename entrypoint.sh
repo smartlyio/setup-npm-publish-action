@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
+# Validate input
+
+if [ -z "$GIT_DEPLOY_KEY" ]
+then
+    echo "No GIT_DEPLOY_KEY environment variable set"
+    exit -1
+fi
+
 # Setup authentication for npm and mark the file as non-changed
 
 if [ -n "$AUTH_TOKEN_STRING" ]
