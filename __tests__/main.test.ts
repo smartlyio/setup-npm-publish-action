@@ -1,9 +1,9 @@
 // import {core} from '@actions/core';
-import {exec} from '@actions/exec';
+import {exec} from '@actions/exec'
 import {promises as fs} from 'fs'
 import * as fssync from 'fs'
 import * as path from 'path'
-import {mocked} from 'ts-jest/utils';
+import {mocked} from 'ts-jest/utils'
 
 import {
   UNSAFE_PERM,
@@ -17,11 +17,11 @@ import {
 jest.mock('@actions/core', () => ({
   info: jest.fn(),
   warning: jest.fn()
-}));
+}))
 
 jest.mock('@actions/exec', () => ({
   exec: jest.fn()
-}));
+}))
 
 let homeTmpDir: string | null = null
 const originalDirectory = process.cwd()
@@ -45,7 +45,9 @@ describe('test npm-setup-publish', () => {
   describe('get env', () => {
     test('failure', () => {
       delete process.env['HOME']
-      expect(() => { getEnv('HOME') }).toThrow()
+      expect(() => {
+        getEnv('HOME')
+      }).toThrow()
     })
 
     test('gets env var', () => {
@@ -68,7 +70,8 @@ describe('test npm-setup-publish', () => {
           stdout: expect.anything(),
           stderr: expect.anything()
         })
-      })]
+      })
+    ]
     await sshKeyscan()
 
     expect(mockExec.mock.calls.length).toEqual(1)
@@ -93,17 +96,35 @@ describe('test npm-setup-publish', () => {
 ${UNSAFE_PERM}
 `)
 
-      const sshKeyData = await fs.readFile(path.join(homeTmpDir as string, '.ssh', 'id_rsa'))
+      const sshKeyData = await fs.readFile(
+        path.join(homeTmpDir as string, '.ssh', 'id_rsa')
+      )
       expect(sshKeyData.toString()).toEqual(deployKey)
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(5)
 
       expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[1]).toEqual(['git', ['update-index', '--assume-unchanged', '.npmrc']])
-      expect(mockExec.mock.calls[2]).toEqual(['git', ['config', 'user.email', email]])
-      expect(mockExec.mock.calls[3]).toEqual(['git', ['config', 'user.name', username]])
-      expect(mockExec.mock.calls[4]).toEqual(['git', ['config', 'core.sshCommand', expect.stringContaining('UserKnownHostsFile')]])
+      expect(mockExec.mock.calls[1]).toEqual([
+        'git',
+        ['update-index', '--assume-unchanged', '.npmrc']
+      ])
+      expect(mockExec.mock.calls[2]).toEqual([
+        'git',
+        ['config', 'user.email', email]
+      ])
+      expect(mockExec.mock.calls[3]).toEqual([
+        'git',
+        ['config', 'user.name', username]
+      ])
+      expect(mockExec.mock.calls[4]).toEqual([
+        'git',
+        [
+          'config',
+          'core.sshCommand',
+          expect.stringContaining('UserKnownHostsFile')
+        ]
+      ])
     })
 
     test('null token', async () => {
@@ -123,17 +144,35 @@ ${UNSAFE_PERM}
 ${UNSAFE_PERM}
 `)
 
-      const sshKeyData = await fs.readFile(path.join(homeTmpDir as string, '.ssh', 'id_rsa'))
+      const sshKeyData = await fs.readFile(
+        path.join(homeTmpDir as string, '.ssh', 'id_rsa')
+      )
       expect(sshKeyData.toString()).toEqual(deployKey)
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(5)
 
       expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[1]).toEqual(['git', ['update-index', '--assume-unchanged', '.npmrc']])
-      expect(mockExec.mock.calls[2]).toEqual(['git', ['config', 'user.email', email]])
-      expect(mockExec.mock.calls[3]).toEqual(['git', ['config', 'user.name', username]])
-      expect(mockExec.mock.calls[4]).toEqual(['git', ['config', 'core.sshCommand', expect.stringContaining('UserKnownHostsFile')]])
+      expect(mockExec.mock.calls[1]).toEqual([
+        'git',
+        ['update-index', '--assume-unchanged', '.npmrc']
+      ])
+      expect(mockExec.mock.calls[2]).toEqual([
+        'git',
+        ['config', 'user.email', email]
+      ])
+      expect(mockExec.mock.calls[3]).toEqual([
+        'git',
+        ['config', 'user.name', username]
+      ])
+      expect(mockExec.mock.calls[4]).toEqual([
+        'git',
+        [
+          'config',
+          'core.sshCommand',
+          expect.stringContaining('UserKnownHostsFile')
+        ]
+      ])
     })
   })
 
@@ -148,10 +187,22 @@ ${UNSAFE_PERM}
     expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zuf', keyPath]])
     expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zuf', hostsPath]])
     expect(mockExec.mock.calls[2]).toEqual(['shred', ['-zf', '.npmrc']])
-    expect(mockExec.mock.calls[3]).toEqual(['git', ['update-index', '--no-assume-unchanged', '.npmrc']])
+    expect(mockExec.mock.calls[3]).toEqual([
+      'git',
+      ['update-index', '--no-assume-unchanged', '.npmrc']
+    ])
     expect(mockExec.mock.calls[4]).toEqual(['git', ['checkout', '.npmrc']])
-    expect(mockExec.mock.calls[5]).toEqual(['git', ['config', '--unset', 'user.email']])
-    expect(mockExec.mock.calls[6]).toEqual(['git', ['config', '--unset', 'user.name']])
-    expect(mockExec.mock.calls[7]).toEqual(['git', ['config', '--unset', 'core.sshCommand']])
+    expect(mockExec.mock.calls[5]).toEqual([
+      'git',
+      ['config', '--unset', 'user.email']
+    ])
+    expect(mockExec.mock.calls[6]).toEqual([
+      'git',
+      ['config', '--unset', 'user.name']
+    ])
+    expect(mockExec.mock.calls[7]).toEqual([
+      'git',
+      ['config', '--unset', 'core.sshCommand']
+    ])
   })
 })
