@@ -1,28 +1,55 @@
-import {wait} from '../src/wait'
-import * as process from 'process'
-import * as cp from 'child_process'
+// import {core} from '@actions/core';
+// import {exec} from '@actions/exec';
+import {promises as fs} from 'fs'
+import * as fssync from 'fs'
 import * as path from 'path'
 
-test('throws invalid number', async () => {
-  const input = parseInt('foo', 10)
-  await expect(wait(input)).rejects.toThrow('milliseconds not a number')
+import {
+  getEnv,
+  getSshPath
+  // sshKeyscan,
+  // setupNpmPublish,
+  // cleanupNpmPublish
+} from '../src/setup-npm-publish'
+
+jest.mock('@actions/core', () => ({
+  info: jest.fn(),
+  warning: jest.fn()
+}));
+
+jest.mock('@actions/exec', () => ({
+  exec: jest.fn()
+}));
+
+let homeTmpDir: string | null = null
+const OLD_ENV = process.env
+beforeEach(() => {
+  homeTmpDir = fssync.mkdtempSync('temp-home')
+  process.env = {...OLD_ENV}
+  process.env['HOME'] = homeTmpDir
 })
 
-test('wait 500 ms', async () => {
-  const start = new Date()
-  await wait(500)
-  const end = new Date()
-  var delta = Math.abs(end.getTime() - start.getTime())
-  expect(delta).toBeGreaterThan(450)
+afterEach(() => {
+  process.env = OLD_ENV
+  fssync.rmdirSync(homeTmpDir as string, {recursive: true})
+  homeTmpDir = null
 })
 
-// shows how the runner will run a javascript action with env / stdout protocol
-test('test runs', () => {
-  process.env['INPUT_MILLISECONDS'] = '500'
-  const np = process.execPath
-  const ip = path.join(__dirname, '..', 'lib', 'main.js')
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env
-  }
-  console.log(cp.execFileSync(np, [ip], options).toString())
+
+describe('test npm-setup-publish', () => {
+  describe('get env', () => {
+    test('failure', () => {
+      delete process.env['HOME']
+      expect(() => { getEnv('HOME') }).toThrow()
+    })
+
+    test('gets env var', () => {
+      expect(getEnv('HOME')).toEqual(homeTmpDir)
+    })
+  })
+
+  test('get ssh path', () => {
+    const filePath = getSshPath('id_rsa')
+    expect(filePath).toEqual(`${homeTmpDir}/.ssh/id_rsa`)
+  })
 })
