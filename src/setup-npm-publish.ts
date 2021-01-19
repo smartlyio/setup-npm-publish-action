@@ -1,8 +1,9 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
+import * as process from 'process'
 import * as path from 'path'
-import * as fs from 'fs/promises'
+import {promises as fs} from 'fs'
 
 export function getEnv(name: string): string {
   const value: string | undefined = process.env[name]
@@ -29,7 +30,7 @@ async function sshKeyscan(): Promise<string> {
       stderr += data.toString()
     }
   }
-  core.debug(`Stderr from ssh-keyscan: ${stderr}`)
+  core.warning(`Stderr from ssh-keyscan: ${stderr}`)
   return stdout
 }
 
