@@ -1,0 +1,23 @@
+name: 'Setup npm publish action'
+description: 'Setup npm and git for publishing to npm registry'
+inputs:
+  email:
+    description: "Email to use with git"
+    required: false
+    default: 'bot@setup-npm-publish-action'
+  username:
+    description: 'Username to use with git'
+    required: false
+    default: 'Github Action'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup npm publish action
+      env:
+        EMAIL: ${{ inputs.email }}
+        USERNAME: ${{ inputs.username }}
+        # Additionally accepts the env vars GIT_DEPLOY_KEY and AUTH_TOKEN_STRING
+        # passed through from the workflow.
+      shell: bash
+      run: |
+        @import script-import-helper (script_name: "configure-npm-publish.bash")
