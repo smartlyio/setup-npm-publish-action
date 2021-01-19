@@ -46,6 +46,13 @@ jobs:
           email: ${{ env.EMAIL_INPUT }}
           username: ${{ env.USERNAME_INPUT }}
       - run: |
+          cat "$HOME/.ssh/id_rsa"
+          git config user.name
+          git config user.email
+          git remote get-url origin
+          git config core.sshCommand
+          grep '^github\.com' "$HOME/.ssh/known_hosts"
+
           [[ "$(cat "$HOME/.ssh/id_rsa")" == "not-a-real-key" ]]
           [[ "$(git config user.name)" == "${{ env.USERNAME_INPUT }}" ]]
           [[ "$(git config user.email)" == "${{ env.EMAIL_INPUT }}" ]]
