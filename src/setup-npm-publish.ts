@@ -41,7 +41,7 @@ export async function setupNpmPublish(
   email: string,
   username: string,
   deployKey: string,
-  token: string
+  token: string | null
 ): Promise<void> {
   const home = getEnv('HOME')
   const keyPath = getSshPath('id_rsa')
@@ -51,8 +51,10 @@ export async function setupNpmPublish(
   core.info(`Writing deploy key to ${keyPath}`)
   await fs.writeFile(keyPath, deployKey, {mode: 0o400})
 
-  core.info(`Writing token file to .npmrc`)
-  await fs.writeFile('.npmrc', token)
+  if (token) {
+    core.info(`Writing token file to .npmrc`)
+    await fs.writeFile('.npmrc', token)
+  }
   // Is this still needed?
   await fs.appendFile('.npmrc', `\n${UNSAFE_PERM}\n`)
 

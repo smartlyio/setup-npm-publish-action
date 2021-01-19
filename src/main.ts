@@ -13,7 +13,7 @@ async function run(): Promise<void> {
     const email: string = core.getInput('email')
     const username: string = core.getInput('username')
     const deployKey: string = getEnv('GIT_DEPLOY_KEY')
-    const token: string | null = process.env['AUTH_TOKEN_STRING']
+    const token: string | null = process.env['AUTH_TOKEN_STRING'] || null
 
     if (!post) {
       await setupNpmPublish(email, username, deployKey, token)

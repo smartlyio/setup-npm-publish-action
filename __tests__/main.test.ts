@@ -75,34 +75,66 @@ describe('test npm-setup-publish', () => {
     expect(mockExec.mock.calls[0]).toEqual(callArgs)
   })
 
-  test('setupNpmPublish', async () => {
-    const repository = path.join(homeTmpDir as string, 'repo')
-    await fs.mkdir(repository, {recursive: true})
-    process.chdir(repository)
+  describe('setupNpmPublish', () => {
+    test('non-null token', async () => {
+      const repository = path.join(homeTmpDir as string, 'repo')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
 
-    const email = 'user@example.com'
-    const username = 'Example User'
-    const deployKey = 'definitely an ssh key'
-    const token = 'this is an npmrc file'
+      const email = 'user@example.com'
+      const username = 'Example User'
+      const deployKey = 'definitely an ssh key'
+      const token = 'this is an npmrc file'
 
-    await setupNpmPublish(email, username, deployKey, token)
+      await setupNpmPublish(email, username, deployKey, token)
 
-    const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
-    expect(tokenData.toString()).toEqual(`${token}
+      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
+      expect(tokenData.toString()).toEqual(`${token}
 ${UNSAFE_PERM}
 `)
 
-    const sshKeyData = await fs.readFile(path.join(homeTmpDir as string, '.ssh', 'id_rsa'))
-    expect(sshKeyData.toString()).toEqual(deployKey)
+      const sshKeyData = await fs.readFile(path.join(homeTmpDir as string, '.ssh', 'id_rsa'))
+      expect(sshKeyData.toString()).toEqual(deployKey)
 
-    const mockExec = mocked(exec)
-    expect(mockExec.mock.calls.length).toEqual(5)
+      const mockExec = mocked(exec)
+      expect(mockExec.mock.calls.length).toEqual(5)
 
-    expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
-    expect(mockExec.mock.calls[1]).toEqual(['git', ['update-index', '--assume-unchanged', '.npmrc']])
-    expect(mockExec.mock.calls[2]).toEqual(['git', ['config', 'user.email', email]])
-    expect(mockExec.mock.calls[3]).toEqual(['git', ['config', 'user.name', username]])
-    expect(mockExec.mock.calls[4]).toEqual(['git', ['config', 'core.sshCommand', expect.stringContaining('UserKnownHostsFile')]])
+      expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[1]).toEqual(['git', ['update-index', '--assume-unchanged', '.npmrc']])
+      expect(mockExec.mock.calls[2]).toEqual(['git', ['config', 'user.email', email]])
+      expect(mockExec.mock.calls[3]).toEqual(['git', ['config', 'user.name', username]])
+      expect(mockExec.mock.calls[4]).toEqual(['git', ['config', 'core.sshCommand', expect.stringContaining('UserKnownHostsFile')]])
+    })
+
+    test('null token', async () => {
+      const repository = path.join(homeTmpDir as string, 'repo')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+
+      const email = 'user@example.com'
+      const username = 'Example User'
+      const deployKey = 'definitely an ssh key'
+      const token = null
+
+      await setupNpmPublish(email, username, deployKey, token)
+
+      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
+      expect(tokenData.toString()).toEqual(`
+${UNSAFE_PERM}
+`)
+
+      const sshKeyData = await fs.readFile(path.join(homeTmpDir as string, '.ssh', 'id_rsa'))
+      expect(sshKeyData.toString()).toEqual(deployKey)
+
+      const mockExec = mocked(exec)
+      expect(mockExec.mock.calls.length).toEqual(5)
+
+      expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[1]).toEqual(['git', ['update-index', '--assume-unchanged', '.npmrc']])
+      expect(mockExec.mock.calls[2]).toEqual(['git', ['config', 'user.email', email]])
+      expect(mockExec.mock.calls[3]).toEqual(['git', ['config', 'user.name', username]])
+      expect(mockExec.mock.calls[4]).toEqual(['git', ['config', 'core.sshCommand', expect.stringContaining('UserKnownHostsFile')]])
+    })
   })
 
   test('cleanupNpmPublish', async () => {
