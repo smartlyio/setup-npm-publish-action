@@ -1,4 +1,4 @@
-name: Lint and validate
+name: Build and test
 
 on:
   pull_request:
@@ -7,35 +7,27 @@ on:
     branches: [master]
 
 jobs:
-  shellcheck:
-    # Use newer os for more up-to-date shellcheck
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run shellcheck on .sh and .bash files files
-        run: |
-          find . -name '*.sh' -exec shellcheck -s bash '{}' \+
-          find . -name '*.bash' -exec shellcheck -s bash '{}' \+
-
-  build:
+  build: # make sure build/ci work properly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-ruby@v1
-        with:
-          ruby-version: "2.7"
-      - name: Install kojo
-        run: gem install kojo
-      - run: make
-      - name: Check for changes
-        run: |
-          git status
-          git_changes="$(git status --porcelain || true)"
-          # If the output is not empty, there are changes; fail the action
-          if [ -n "$git_changes" ]; then
-              echo "Changes found; build the action with 'make' and commit the changes"
-              exit 1
-          fi
+    - uses: actions/checkout@v2
+    - name: "Install"
+      run: |
+        npm install
+    - name: "Run build"
+      run: |
+        npm run all
+    - name: "Run tests"
+      run: |
+        npm run test
+    - name: "Verify artefacts are up to date in the repository"
+      run: |
+        # Error if there are changes after the build
+        if [ "$(git status --porcelain | wc -c)" -gt "0" ]; then
+            echo "Built artefacts (dist/*) were not updated by the pull request."
+            echo "Run `npm run-script package` and commit the changes."
+            exit 1
+        fi
 
   test:
     runs-on: ubuntu-latest
