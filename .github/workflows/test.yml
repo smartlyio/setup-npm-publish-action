@@ -47,6 +47,7 @@ jobs:
           username: ${{ env.USERNAME_INPUT }}
       - run: |
           cat "$HOME/.ssh/id_rsa"
+          echo
           git config user.name
           git config user.email
           git remote get-url origin
