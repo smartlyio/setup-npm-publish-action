@@ -30,6 +30,7 @@ async function sshKeyscan(): Promise<string> {
       stderr += data.toString()
     }
   }
+  await exec.exec('ssh-keyscan', ['-t', 'rsa', 'github.com'], options)
   core.warning(`Stderr from ssh-keyscan: ${stderr}`)
   return stdout
 }
