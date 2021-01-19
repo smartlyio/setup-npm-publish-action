@@ -72,6 +72,11 @@ export async function setupNpmPublish(
   core.info('Setting up git config for ssh command')
   const sshCommand = `ssh -i ${home}/.ssh/id_rsa -o UserKnownHostsFile=${home}/.ssh/known_hosts`
   await exec.exec('git', ['config', 'core.sshCommand', sshCommand])
+
+  core.info('Setting git remote url')
+  const repoFullName = process.env['GITHUB_REPOSITORY']
+  const origin = `git@github.com:${repoFullName}.git`
+  await exec.exec('git', ['remote', 'set-url', 'origin', origin])
 }
 
 export async function cleanupNpmPublish(): Promise<void> {
@@ -91,4 +96,9 @@ export async function cleanupNpmPublish(): Promise<void> {
   await exec.exec('git', ['config', '--unset', 'user.email'])
   await exec.exec('git', ['config', '--unset', 'user.name'])
   await exec.exec('git', ['config', '--unset', 'core.sshCommand'])
+
+  core.info('Resetting git remote url')
+  const repoFullName = process.env['GITHUB_REPOSITORY']
+  const origin = `https://github.com/${repoFullName}`
+  await exec.exec('git', ['remote', 'set-url', 'origin', origin])
 }

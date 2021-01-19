@@ -25,6 +25,7 @@ jest.mock('@actions/exec', () => ({
 
 let homeTmpDir: string | null = null
 const originalDirectory = process.cwd()
+const githubRepository = 'smartlyio/setup-npm-publish-action'
 const OLD_ENV = process.env
 beforeEach(() => {
   jest.resetAllMocks()
@@ -32,6 +33,7 @@ beforeEach(() => {
   process.chdir(homeTmpDir)
   process.env = {...OLD_ENV}
   process.env['HOME'] = homeTmpDir
+  process.env['GITHUB_REPOSITORY'] = githubRepository
 })
 
 afterEach(() => {
@@ -102,7 +104,7 @@ ${UNSAFE_PERM}
       expect(sshKeyData.toString()).toEqual(deployKey)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(5)
+      expect(mockExec.mock.calls.length).toEqual(6)
 
       expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
       expect(mockExec.mock.calls[1]).toEqual([
@@ -123,6 +125,15 @@ ${UNSAFE_PERM}
           'config',
           'core.sshCommand',
           expect.stringContaining('UserKnownHostsFile')
+        ]
+      ])
+      expect(mockExec.mock.calls[5]).toEqual([
+        'git',
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `git@github.com:${githubRepository}.git`
         ]
       ])
     })
@@ -150,7 +161,7 @@ ${UNSAFE_PERM}
       expect(sshKeyData.toString()).toEqual(deployKey)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(5)
+      expect(mockExec.mock.calls.length).toEqual(6)
 
       expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
       expect(mockExec.mock.calls[1]).toEqual([
@@ -173,6 +184,15 @@ ${UNSAFE_PERM}
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
+      expect(mockExec.mock.calls[5]).toEqual([
+        'git',
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `git@github.com:${githubRepository}.git`
+        ]
+      ])
     })
   })
 
@@ -182,7 +202,7 @@ ${UNSAFE_PERM}
     await cleanupNpmPublish()
 
     const mockExec = mocked(exec)
-    expect(mockExec.mock.calls.length).toEqual(8)
+    expect(mockExec.mock.calls.length).toEqual(9)
 
     expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zuf', keyPath]])
     expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zuf', hostsPath]])
@@ -204,5 +224,14 @@ ${UNSAFE_PERM}
       'git',
       ['config', '--unset', 'core.sshCommand']
     ])
+      expect(mockExec.mock.calls[8]).toEqual([
+        'git',
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `https://github.com/${githubRepository}`
+        ]
+      ])
   })
 })
