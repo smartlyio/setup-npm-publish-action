@@ -5,6 +5,8 @@ import * as process from 'process'
 import * as path from 'path'
 import {promises as fs} from 'fs'
 
+export const UNSAFE_PERM = 'unsafe-perm = true'
+
 export function getEnv(name: string): string {
   const value: string | undefined = process.env[name]
   if (value === undefined) {
@@ -18,7 +20,7 @@ export function getSshPath(name: string): string {
   return path.join(home, '.ssh', name)
 }
 
-async function sshKeyscan(): Promise<string> {
+export async function sshKeyscan(): Promise<string> {
   let stderr = ''
   let stdout = ''
   const options: exec.ExecOptions = {}
@@ -44,7 +46,7 @@ export async function setupNpmPublish(
   const home = getEnv('HOME')
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
-  await fs.mkdir(keyPath)
+  await fs.mkdir(path.join(home, '.ssh'))
 
   core.info(`Writing deploy key to ${keyPath}`)
   await fs.writeFile(keyPath, deployKey, {mode: 0o400})
@@ -52,7 +54,7 @@ export async function setupNpmPublish(
   core.info(`Writing token file to .npmrc`)
   await fs.writeFile('.npmrc', token)
   // Is this still needed?
-  await fs.appendFile('.npmrc', 'unsafe-perm = true')
+  await fs.appendFile('.npmrc', `\n${UNSAFE_PERM}\n`)
 
   core.info('Running ssh-keyscan for github.com')
   const githubKey = await sshKeyscan()
