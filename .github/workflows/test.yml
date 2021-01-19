@@ -1,0 +1,64 @@
+name: Lint and validate
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  shellcheck:
+    # Use newer os for more up-to-date shellcheck
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run shellcheck on .sh and .bash files files
+        run: |
+          find . -name '*.sh' -exec shellcheck -s bash '{}' \+
+          find . -name '*.bash' -exec shellcheck -s bash '{}' \+
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
+      - name: Install kojo
+        run: gem install kojo
+      - run: make
+      - name: Check for changes
+        run: |
+          git status
+          git_changes="$(git status --porcelain || true)"
+          # If the output is not empty, there are changes; fail the action
+          if [ -n "$git_changes" ]; then
+              echo "Changes found; build the action with 'make' and commit the changes"
+              exit 1
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    # Only run if the action is up-to-date
+    needs: build
+    env:
+      EMAIL_INPUT: test@example.com
+      USERNAME_INPUT: example-test
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        env:
+          GIT_DEPLOY_KEY: not-a-real-key
+          AUTH_TOKEN_STRING: definitely-real-token
+        with:
+          email: ${{ env.EMAIL_INPUT }}
+          username: ${{ env.USERNAME_INPUT }}
+      - run: |
+          [[ "$(cat "$HOME/.ssh/id_rsa")" == "not-a-real-key" ]]
+          [[ "$(git config user.name)" == "${{ env.USERNAME_INPUT }}" ]]
+          [[ "$(git config user.email)" == "${{ env.EMAIL_INPUT }}" ]]
+          [[ "$(git remote get-url origin)" == "git@github.com:$GITHUB_REPOSITORY.git" ]]
+
+          # Just check that it is altered from default
+          [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
+          grep '^github\.com' "$HOME/.ssh/known_hosts"
