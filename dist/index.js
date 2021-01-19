@@ -165,6 +165,10 @@ function setupNpmPublish(email, username, deployKey, token) {
         core.info('Setting up git config for ssh command');
         const sshCommand = `ssh -i ${home}/.ssh/id_rsa -o UserKnownHostsFile=${home}/.ssh/known_hosts`;
         yield exec.exec('git', ['config', 'core.sshCommand', sshCommand]);
+        core.info('Setting git remote url');
+        const repoFullName = process.env['GITHUB_REPOSITORY'];
+        const origin = `git@github.com:${repoFullName}.git`;
+        yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
     });
 }
 exports.setupNpmPublish = setupNpmPublish;
@@ -183,6 +187,10 @@ function cleanupNpmPublish() {
         yield exec.exec('git', ['config', '--unset', 'user.email']);
         yield exec.exec('git', ['config', '--unset', 'user.name']);
         yield exec.exec('git', ['config', '--unset', 'core.sshCommand']);
+        core.info('Resetting git remote url');
+        const repoFullName = process.env['GITHUB_REPOSITORY'];
+        const origin = `https://github.com/${repoFullName}`;
+        yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
     });
 }
 exports.cleanupNpmPublish = cleanupNpmPublish;

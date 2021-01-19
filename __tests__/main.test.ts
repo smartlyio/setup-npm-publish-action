@@ -224,14 +224,9 @@ ${UNSAFE_PERM}
       'git',
       ['config', '--unset', 'core.sshCommand']
     ])
-      expect(mockExec.mock.calls[8]).toEqual([
-        'git',
-        [
-          'remote',
-          'set-url',
-          'origin',
-          `https://github.com/${githubRepository}`
-        ]
-      ])
+    expect(mockExec.mock.calls[8]).toEqual([
+      'git',
+      ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
+    ])
   })
 })
