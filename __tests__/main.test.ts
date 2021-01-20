@@ -23,43 +23,43 @@ jest.mock('@actions/exec', () => ({
   exec: jest.fn()
 }))
 
-let homeTmpDir: string | null = null
+let runnerTempDir: string | null = null
 const originalDirectory = process.cwd()
 const githubRepository = 'smartlyio/setup-npm-publish-action'
 const OLD_ENV = process.env
 beforeEach(() => {
   jest.resetAllMocks()
-  homeTmpDir = fssync.mkdtempSync(path.join(originalDirectory, 'temp-home'))
-  process.chdir(homeTmpDir)
+  runnerTempDir = fssync.mkdtempSync(path.join(originalDirectory, 'runner-temp'))
+  process.chdir(runnerTempDir)
   process.env = {...OLD_ENV}
-  process.env['HOME'] = homeTmpDir
+  process.env['RUNNER_TEMP'] = runnerTempDir
   process.env['GITHUB_REPOSITORY'] = githubRepository
 })
 
 afterEach(() => {
   process.chdir(originalDirectory)
   process.env = OLD_ENV
-  fssync.rmdirSync(homeTmpDir as string, {recursive: true})
-  homeTmpDir = null
+  fssync.rmdirSync(runnerTempDir as string, {recursive: true})
+  runnerTempDir = null
 })
 
 describe('test npm-setup-publish', () => {
   describe('get env', () => {
     test('failure', () => {
-      delete process.env['HOME']
+      delete process.env['RUNNER_TEMP']
       expect(() => {
-        getEnv('HOME')
+        getEnv('RUNNER_TEMP')
       }).toThrow()
     })
 
     test('gets env var', () => {
-      expect(getEnv('HOME')).toEqual(homeTmpDir)
+      expect(getEnv('RUNNER_TEMP')).toEqual(runnerTempDir)
     })
   })
 
   test('get ssh path', () => {
     const filePath = getSshPath('id_rsa')
-    expect(filePath).toEqual(`${homeTmpDir}/.ssh/id_rsa`)
+    expect(filePath).toEqual(`${runnerTempDir}/sshconfig/id_rsa`)
   })
 
   test('ssh-keyscan', async () => {
@@ -82,7 +82,7 @@ describe('test npm-setup-publish', () => {
 
   describe('setupNpmPublish', () => {
     test('non-null token', async () => {
-      const repository = path.join(homeTmpDir as string, 'repo')
+      const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
 
@@ -99,7 +99,7 @@ ${UNSAFE_PERM}
 `)
 
       const sshKeyData = await fs.readFile(
-        path.join(homeTmpDir as string, '.ssh', 'id_rsa')
+        path.join(runnerTempDir as string, 'sshconfig', 'id_rsa')
       )
       expect(sshKeyData.toString()).toEqual(deployKey)
 
@@ -139,7 +139,7 @@ ${UNSAFE_PERM}
     })
 
     test('null token', async () => {
-      const repository = path.join(homeTmpDir as string, 'repo')
+      const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
 
@@ -156,7 +156,7 @@ ${UNSAFE_PERM}
 `)
 
       const sshKeyData = await fs.readFile(
-        path.join(homeTmpDir as string, '.ssh', 'id_rsa')
+        path.join(runnerTempDir as string, 'sshconfig', 'id_rsa')
       )
       expect(sshKeyData.toString()).toEqual(deployKey)
 
@@ -197,8 +197,8 @@ ${UNSAFE_PERM}
   })
 
   test('cleanupNpmPublish', async () => {
-    const keyPath = path.join(homeTmpDir as string, '.ssh', 'id_rsa')
-    const hostsPath = path.join(homeTmpDir as string, '.ssh', 'known_hosts')
+    const keyPath = path.join(runnerTempDir as string, 'sshconfig', 'id_rsa')
+    const hostsPath = path.join(runnerTempDir as string, 'sshconfig', 'known_hosts')
     await cleanupNpmPublish()
 
     const mockExec = mocked(exec)

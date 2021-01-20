@@ -16,8 +16,8 @@ export function getEnv(name: string): string {
 }
 
 export function getSshPath(name: string): string {
-  const home = getEnv('HOME')
-  return path.join(home, '.ssh', name)
+  const temp = getEnv('RUNNER_TEMP')
+  return path.join(temp, 'sshconfig', name)
 }
 
 export async function sshKeyscan(): Promise<string> {
@@ -43,10 +43,10 @@ export async function setupNpmPublish(
   deployKey: string,
   token: string | null
 ): Promise<void> {
-  const home = getEnv('HOME')
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
-  await fs.mkdir(path.join(home, '.ssh'))
+  const sshDir = path.dirname(keyPath)
+  await fs.mkdir(sshDir, {recursive: true})
 
   core.info(`Writing deploy key to ${keyPath}`)
   await fs.writeFile(keyPath, deployKey, {mode: 0o400})
@@ -70,7 +70,7 @@ export async function setupNpmPublish(
   await exec.exec('git', ['config', 'user.name', username])
 
   core.info('Setting up git config for ssh command')
-  const sshCommand = `ssh -i ${home}/.ssh/id_rsa -o UserKnownHostsFile=${home}/.ssh/known_hosts`
+  const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`
   await exec.exec('git', ['config', 'core.sshCommand', sshCommand])
 
   core.info('Setting git remote url')
