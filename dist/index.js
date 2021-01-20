@@ -117,8 +117,8 @@ function getEnv(name) {
 }
 exports.getEnv = getEnv;
 function getSshPath(name) {
-    const home = getEnv('HOME');
-    return path.join(home, '.ssh', name);
+    const temp = getEnv('RUNNER_TEMP');
+    return path.join(temp, 'setup-npm-publish-action', name);
 }
 exports.getSshPath = getSshPath;
 function sshKeyscan() {
@@ -142,10 +142,10 @@ function sshKeyscan() {
 exports.sshKeyscan = sshKeyscan;
 function setupNpmPublish(email, username, deployKey, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        const home = getEnv('HOME');
         const keyPath = getSshPath('id_rsa');
         const knownHostsPath = getSshPath('known_hosts');
-        yield fs_1.promises.mkdir(path.join(home, '.ssh'));
+        const sshDir = path.dirname(keyPath);
+        yield fs_1.promises.mkdir(sshDir, { recursive: true });
         core.info(`Writing deploy key to ${keyPath}`);
         yield fs_1.promises.writeFile(keyPath, deployKey, { mode: 0o400 });
         if (token) {
@@ -163,7 +163,7 @@ function setupNpmPublish(email, username, deployKey, token) {
         yield exec.exec('git', ['config', 'user.email', email]);
         yield exec.exec('git', ['config', 'user.name', username]);
         core.info('Setting up git config for ssh command');
-        const sshCommand = `ssh -i ${home}/.ssh/id_rsa -o UserKnownHostsFile=${home}/.ssh/known_hosts`;
+        const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`;
         yield exec.exec('git', ['config', 'core.sshCommand', sshCommand]);
         core.info('Setting git remote url');
         const repoFullName = process.env['GITHUB_REPOSITORY'];
