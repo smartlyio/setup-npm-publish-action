@@ -17,7 +17,7 @@ export function getEnv(name: string): string {
 
 export function getSshPath(name: string): string {
   const temp = getEnv('RUNNER_TEMP')
-  return path.join(temp, 'sshconfig', name)
+  return path.join(temp, 'setup-npm-publish-action', name)
 }
 
 export async function sshKeyscan(): Promise<string> {
