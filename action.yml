@@ -10,5 +10,6 @@ inputs:
     required: false
     default: 'Github Action'
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: "node12"
+  main: "dist/index.js"
+  post: "dist/index.js"
