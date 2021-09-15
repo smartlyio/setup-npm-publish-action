@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {getEnv, setupNpmPublish, cleanupNpmPublish} from './setup-npm-publish'
+import {cleanupNpmPublish, getEnv, setupNpmPublish} from './setup-npm-publish'
 
 function isPost(): boolean {
   // Will be false if the environment variable doesn't exist; true if it does.
@@ -21,7 +21,7 @@ async function run(): Promise<void> {
       await cleanupNpmPublish()
     }
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed((error as Error).message)
   }
 }
 
