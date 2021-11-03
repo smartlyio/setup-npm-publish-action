@@ -147,7 +147,7 @@ function setupNpmPublish(email, username, deployKey, token) {
         const sshDir = path.dirname(keyPath);
         yield fs_1.promises.mkdir(sshDir, { recursive: true });
         core.info(`Writing deploy key to ${keyPath}`);
-        yield fs_1.promises.writeFile(keyPath, deployKey, { mode: 0o400 });
+        yield fs_1.promises.writeFile(keyPath, `${deployKey}\n`, { mode: 0o400 });
         if (token) {
             core.info(`Writing token file to .npmrc`);
             yield fs_1.promises.writeFile('.npmrc', token);
