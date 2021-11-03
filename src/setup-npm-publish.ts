@@ -49,7 +49,7 @@ export async function setupNpmPublish(
   await fs.mkdir(sshDir, {recursive: true})
 
   core.info(`Writing deploy key to ${keyPath}`)
-  await fs.writeFile(keyPath, deployKey, {mode: 0o400})
+  await fs.writeFile(keyPath, `${deployKey}\n`, {mode: 0o400})
 
   if (token) {
     core.info(`Writing token file to .npmrc`)
