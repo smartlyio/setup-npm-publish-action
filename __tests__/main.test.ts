@@ -103,7 +103,7 @@ ${UNSAFE_PERM}
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
       )
-      expect(sshKeyData.toString()).toEqual(deployKey)
+      expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(6)
@@ -160,7 +160,7 @@ ${UNSAFE_PERM}
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
       )
-      expect(sshKeyData.toString()).toEqual(deployKey)
+      expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(6)
