@@ -254,7 +254,10 @@ ${UNSAFE_PERM}
         'git',
         ['update-index', '--no-assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[4]).toEqual(['git', ['checkout', '.npmrc']])
+      expect(mockExec.mock.calls[4]).toEqual([
+        'git',
+        ['checkout', '--', '.npmrc']
+      ])
       expect(mockExec.mock.calls[5]).toEqual([
         'git',
         ['config', '--unset', 'user.email']
@@ -287,34 +290,16 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
 
       expect(mockGetState.mock.calls.length).toEqual(1)
-      expect(mockExec.mock.calls.length).toEqual(7)
+      expect(mockExec.mock.calls.length).toEqual(3)
 
       expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zf', '.npmrc']])
       expect(mockExec.mock.calls[1]).toEqual([
         'git',
         ['update-index', '--no-assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[2]).toEqual(['git', ['checkout', '.npmrc']])
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
-        ['config', '--unset', 'user.email']
-      ])
-      expect(mockExec.mock.calls[4]).toEqual([
-        'git',
-        ['config', '--unset', 'user.name']
-      ])
-      expect(mockExec.mock.calls[5]).toEqual([
-        'git',
-        ['config', '--unset', 'core.sshCommand']
-      ])
-      expect(mockExec.mock.calls[6]).toEqual([
-        'git',
-        [
-          'remote',
-          'set-url',
-          'origin',
-          `https://github.com/${githubRepository}`
-        ]
+        ['checkout', '--', '.npmrc']
       ])
     })
   })

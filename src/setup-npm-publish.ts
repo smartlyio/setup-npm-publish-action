@@ -99,15 +99,17 @@ export async function cleanupNpmPublish(): Promise<void> {
 
   core.info('Resetting .npmrc')
   await exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc'])
-  await exec.exec('git', ['checkout', '.npmrc'])
+  await exec.exec('git', ['checkout', '--', '.npmrc'])
 
-  core.info('Unsettings git config')
-  await exec.exec('git', ['config', '--unset', 'user.email'])
-  await exec.exec('git', ['config', '--unset', 'user.name'])
-  await exec.exec('git', ['config', '--unset', 'core.sshCommand'])
+  if (!gitDeploySkipped) {
+    core.info('Unsetting git config')
+    await exec.exec('git', ['config', '--unset', 'user.email'])
+    await exec.exec('git', ['config', '--unset', 'user.name'])
+    await exec.exec('git', ['config', '--unset', 'core.sshCommand'])
 
-  core.info('Resetting git remote url')
-  const repoFullName = process.env['GITHUB_REPOSITORY']
-  const origin = `https://github.com/${repoFullName}`
-  await exec.exec('git', ['remote', 'set-url', 'origin', origin])
+    core.info('Resetting git remote url')
+    const repoFullName = process.env['GITHUB_REPOSITORY']
+    const origin = `https://github.com/${repoFullName}`
+    await exec.exec('git', ['remote', 'set-url', 'origin', origin])
+  }
 }
