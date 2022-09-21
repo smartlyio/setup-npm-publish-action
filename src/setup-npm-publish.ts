@@ -79,17 +79,22 @@ export async function setupNpmPublish(
     const origin = `git@github.com:${repoFullName}.git`
     await exec.exec('git', ['remote', 'set-url', 'origin', origin])
   } else {
+    core.saveState('skipGitDeployKey', 'true')
     core.info('skipping git setup: GIT_DEPLOY_KEY not provided')
   }
 }
 
 export async function cleanupNpmPublish(): Promise<void> {
-  const keyPath = getSshPath('id_rsa')
-  const knownHosts = getSshPath('known_hosts')
+  const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true'
 
   core.info('Shredding files containing secrets')
-  await exec.exec('shred', ['-zuf', keyPath])
-  await exec.exec('shred', ['-zuf', knownHosts])
+
+  if (!gitDeploySkipped) {
+    const keyPath = getSshPath('id_rsa')
+    const knownHosts = getSshPath('known_hosts')
+    await exec.exec('shred', ['-zuf', keyPath])
+    await exec.exec('shred', ['-zuf', knownHosts])
+  }
   await exec.exec('shred', ['-zf', '.npmrc'])
 
   core.info('Resetting .npmrc')

@@ -1,4 +1,5 @@
 // import {core} from '@actions/core';
+import {getState} from '@actions/core'
 import {exec} from '@actions/exec'
 import {promises as fs} from 'fs'
 import * as fssync from 'fs'
@@ -16,7 +17,9 @@ import {
 
 jest.mock('@actions/core', () => ({
   info: jest.fn(),
-  warning: jest.fn()
+  warning: jest.fn(),
+  saveState: jest.fn(),
+  getState: jest.fn()
 }))
 
 jest.mock('@actions/exec', () => ({
@@ -196,47 +199,113 @@ ${UNSAFE_PERM}
         ]
       ])
     })
+
+    test('null ssh key', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+
+      const email = 'user@example.com'
+      const username = 'Example User'
+      const deployKey = null
+      const token = 'this is an npmrc file'
+
+      await setupNpmPublish(email, username, deployKey, token)
+
+      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
+      expect(tokenData.toString()).toEqual(`${token}
+${UNSAFE_PERM}
+`)
+
+      const mockExec = mocked(exec)
+      expect(mockExec.mock.calls.length).toEqual(1)
+
+      expect(mockExec.mock.calls[0]).toEqual([
+        'git',
+        ['update-index', '--assume-unchanged', '.npmrc']
+      ])
+    })
   })
 
-  test('cleanupNpmPublish', async () => {
-    const keyPath = path.join(
-      runnerTempDir as string,
-      'setup-npm-publish-action',
-      'id_rsa'
-    )
-    const hostsPath = path.join(
-      runnerTempDir as string,
-      'setup-npm-publish-action',
-      'known_hosts'
-    )
-    await cleanupNpmPublish()
+  describe('cleanupNpmPublish', () => {
+    test('with git deploy key', async () => {
+      const keyPath = path.join(
+        runnerTempDir as string,
+        'setup-npm-publish-action',
+        'id_rsa'
+      )
+      const hostsPath = path.join(
+        runnerTempDir as string,
+        'setup-npm-publish-action',
+        'known_hosts'
+      )
+      await cleanupNpmPublish()
 
-    const mockExec = mocked(exec)
-    expect(mockExec.mock.calls.length).toEqual(9)
+      const mockGetState = mocked(getState)
+      const mockExec = mocked(exec)
 
-    expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zuf', keyPath]])
-    expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zuf', hostsPath]])
-    expect(mockExec.mock.calls[2]).toEqual(['shred', ['-zf', '.npmrc']])
-    expect(mockExec.mock.calls[3]).toEqual([
-      'git',
-      ['update-index', '--no-assume-unchanged', '.npmrc']
-    ])
-    expect(mockExec.mock.calls[4]).toEqual(['git', ['checkout', '.npmrc']])
-    expect(mockExec.mock.calls[5]).toEqual([
-      'git',
-      ['config', '--unset', 'user.email']
-    ])
-    expect(mockExec.mock.calls[6]).toEqual([
-      'git',
-      ['config', '--unset', 'user.name']
-    ])
-    expect(mockExec.mock.calls[7]).toEqual([
-      'git',
-      ['config', '--unset', 'core.sshCommand']
-    ])
-    expect(mockExec.mock.calls[8]).toEqual([
-      'git',
-      ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
-    ])
+      expect(mockGetState.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(9)
+
+      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zuf', keyPath]])
+      expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zuf', hostsPath]])
+      expect(mockExec.mock.calls[2]).toEqual(['shred', ['-zf', '.npmrc']])
+      expect(mockExec.mock.calls[3]).toEqual([
+        'git',
+        ['update-index', '--no-assume-unchanged', '.npmrc']
+      ])
+      expect(mockExec.mock.calls[4]).toEqual(['git', ['checkout', '.npmrc']])
+      expect(mockExec.mock.calls[5]).toEqual([
+        'git',
+        ['config', '--unset', 'user.email']
+      ])
+      expect(mockExec.mock.calls[6]).toEqual([
+        'git',
+        ['config', '--unset', 'user.name']
+      ])
+      expect(mockExec.mock.calls[7]).toEqual([
+        'git',
+        ['config', '--unset', 'core.sshCommand']
+      ])
+      expect(mockExec.mock.calls[8]).toEqual([
+        'git',
+        ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
+      ])
+    })
+
+    test('without git deploy key', async () => {
+      const mockGetState = mocked(getState)
+      mockGetState.mockReturnValue('true')
+
+      await cleanupNpmPublish()
+
+      const mockExec = mocked(exec)
+
+      expect(mockGetState.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(7)
+
+      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zf', '.npmrc']])
+      expect(mockExec.mock.calls[1]).toEqual([
+        'git',
+        ['update-index', '--no-assume-unchanged', '.npmrc']
+      ])
+      expect(mockExec.mock.calls[2]).toEqual(['git', ['checkout', '.npmrc']])
+      expect(mockExec.mock.calls[3]).toEqual([
+        'git',
+        ['config', '--unset', 'user.email']
+      ])
+      expect(mockExec.mock.calls[4]).toEqual([
+        'git',
+        ['config', '--unset', 'user.name']
+      ])
+      expect(mockExec.mock.calls[5]).toEqual([
+        'git',
+        ['config', '--unset', 'core.sshCommand']
+      ])
+      expect(mockExec.mock.calls[6]).toEqual([
+        'git',
+        ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
+      ])
+    })
   })
 })
