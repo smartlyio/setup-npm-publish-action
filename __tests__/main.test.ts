@@ -3,7 +3,7 @@ import {exec} from '@actions/exec'
 import {promises as fs} from 'fs'
 import * as fssync from 'fs'
 import * as path from 'path'
-import {mocked} from 'ts-jest/utils'
+import {mocked} from 'jest-mock'
 
 import {
   UNSAFE_PERM,
@@ -41,7 +41,7 @@ beforeEach(() => {
 afterEach(() => {
   process.chdir(originalDirectory)
   process.env = OLD_ENV
-  fssync.rmdirSync(runnerTempDir as string, {recursive: true})
+  fssync.rmSync(runnerTempDir as string, {recursive: true})
   runnerTempDir = null
 })
 
