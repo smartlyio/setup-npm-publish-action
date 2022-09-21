@@ -269,7 +269,12 @@ ${UNSAFE_PERM}
       ])
       expect(mockExec.mock.calls[8]).toEqual([
         'git',
-        ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `https://github.com/${githubRepository}`
+        ]
       ])
     })
 
@@ -304,7 +309,12 @@ ${UNSAFE_PERM}
       ])
       expect(mockExec.mock.calls[6]).toEqual([
         'git',
-        ['remote', 'set-url', 'origin', `https://github.com/${githubRepository}`]
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `https://github.com/${githubRepository}`
+        ]
       ])
     })
   })
