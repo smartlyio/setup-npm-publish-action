@@ -40,16 +40,13 @@ export async function sshKeyscan(): Promise<string> {
 export async function setupNpmPublish(
   email: string,
   username: string,
-  deployKey: string,
+  deployKey: string | null,
   token: string | null
 ): Promise<void> {
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
   const sshDir = path.dirname(keyPath)
   await fs.mkdir(sshDir, {recursive: true})
-
-  core.info(`Writing deploy key to ${keyPath}`)
-  await fs.writeFile(keyPath, `${deployKey}\n`, {mode: 0o400})
 
   if (token) {
     core.info(`Writing token file to .npmrc`)
@@ -58,25 +55,32 @@ export async function setupNpmPublish(
   // Is this still needed?
   await fs.appendFile('.npmrc', `\n${UNSAFE_PERM}\n`)
 
-  core.info('Running ssh-keyscan for github.com')
-  const githubKey = await sshKeyscan()
-  await fs.writeFile(knownHostsPath, githubKey)
-
   core.info('Marking .npmrc as unmodified to avoid committing the keys')
   await exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc'])
 
-  core.info('Setting up git config for commit user')
-  await exec.exec('git', ['config', 'user.email', email])
-  await exec.exec('git', ['config', 'user.name', username])
+  if (deployKey) {
+    core.info(`Writing deploy key to ${keyPath}`)
+    await fs.writeFile(keyPath, `${deployKey}\n`, {mode: 0o400})
 
-  core.info('Setting up git config for ssh command')
-  const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`
-  await exec.exec('git', ['config', 'core.sshCommand', sshCommand])
+    core.info('Running ssh-keyscan for github.com')
+    const githubKey = await sshKeyscan()
+    await fs.writeFile(knownHostsPath, githubKey)
 
-  core.info('Setting git remote url')
-  const repoFullName = process.env['GITHUB_REPOSITORY']
-  const origin = `git@github.com:${repoFullName}.git`
-  await exec.exec('git', ['remote', 'set-url', 'origin', origin])
+    core.info('Setting up git config for commit user')
+    await exec.exec('git', ['config', 'user.email', email])
+    await exec.exec('git', ['config', 'user.name', username])
+
+    core.info('Setting up git config for ssh command')
+    const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`
+    await exec.exec('git', ['config', 'core.sshCommand', sshCommand])
+
+    core.info('Setting git remote url')
+    const repoFullName = process.env['GITHUB_REPOSITORY']
+    const origin = `git@github.com:${repoFullName}.git`
+    await exec.exec('git', ['remote', 'set-url', 'origin', origin])
+  } else {
+    core.info('skipping git setup: GIT_DEPLOY_KEY not provided')
+  }
 }
 
 export async function cleanupNpmPublish(): Promise<void> {

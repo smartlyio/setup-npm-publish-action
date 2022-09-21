@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     core.saveState('isPost', post)
     const email: string = core.getInput('email')
     const username: string = core.getInput('username')
-    const deployKey: string = getEnv('GIT_DEPLOY_KEY')
+    const deployKey: string | null = getEnv('GIT_DEPLOY_KEY') || null
     const token: string | null = process.env['AUTH_TOKEN_STRING'] || null
 
     if (!post) {

@@ -108,11 +108,11 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(6)
 
-      expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[0]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
+      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
       expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['config', 'user.email', email]
@@ -165,11 +165,11 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(6)
 
-      expect(mockExec.mock.calls[0][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[0]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
+      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
       expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['config', 'user.email', email]
