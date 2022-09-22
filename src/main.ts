@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {cleanupNpmPublish, getEnv, setupNpmPublish} from './setup-npm-publish'
+import {cleanupNpmPublish, setupNpmPublish} from './setup-npm-publish'
 
 function isPost(): boolean {
   // Will be false if the environment variable doesn't exist; true if it does.
@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     core.saveState('isPost', post)
     const email: string = core.getInput('email')
     const username: string = core.getInput('username')
-    const deployKey: string = getEnv('GIT_DEPLOY_KEY')
+    const deployKey: string | null = process.env['GIT_DEPLOY_KEY'] || null
     const token: string | null = process.env['AUTH_TOKEN_STRING'] || null
 
     if (!post) {
