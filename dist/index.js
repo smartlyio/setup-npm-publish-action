@@ -52,7 +52,7 @@ function run() {
             core.saveState('isPost', post);
             const email = core.getInput('email');
             const username = core.getInput('username');
-            const deployKey = (0, setup_npm_publish_1.getEnv)('GIT_DEPLOY_KEY');
+            const deployKey = process.env['GIT_DEPLOY_KEY'] || null;
             const token = process.env['AUTH_TOKEN_STRING'] || null;
             if (!post) {
                 yield (0, setup_npm_publish_1.setupNpmPublish)(email, username, deployKey, token);
@@ -154,51 +154,62 @@ function setupNpmPublish(email, username, deployKey, token) {
         const knownHostsPath = getSshPath('known_hosts');
         const sshDir = path.dirname(keyPath);
         yield fs_1.promises.mkdir(sshDir, { recursive: true });
-        core.info(`Writing deploy key to ${keyPath}`);
-        yield fs_1.promises.writeFile(keyPath, `${deployKey}\n`, { mode: 0o400 });
         if (token) {
             core.info(`Writing token file to .npmrc`);
             yield fs_1.promises.writeFile('.npmrc', token);
         }
         // Is this still needed?
         yield fs_1.promises.appendFile('.npmrc', `\n${exports.UNSAFE_PERM}\n`);
-        core.info('Running ssh-keyscan for github.com');
-        const githubKey = yield sshKeyscan();
-        yield fs_1.promises.writeFile(knownHostsPath, githubKey);
         core.info('Marking .npmrc as unmodified to avoid committing the keys');
         yield exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc']);
-        core.info('Setting up git config for commit user');
-        yield exec.exec('git', ['config', 'user.email', email]);
-        yield exec.exec('git', ['config', 'user.name', username]);
-        core.info('Setting up git config for ssh command');
-        const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`;
-        yield exec.exec('git', ['config', 'core.sshCommand', sshCommand]);
-        core.info('Setting git remote url');
-        const repoFullName = process.env['GITHUB_REPOSITORY'];
-        const origin = `git@github.com:${repoFullName}.git`;
-        yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
+        if (deployKey) {
+            core.info(`Writing deploy key to ${keyPath}`);
+            yield fs_1.promises.writeFile(keyPath, `${deployKey}\n`, { mode: 0o400 });
+            core.info('Running ssh-keyscan for github.com');
+            const githubKey = yield sshKeyscan();
+            yield fs_1.promises.writeFile(knownHostsPath, githubKey);
+            core.info('Setting up git config for commit user');
+            yield exec.exec('git', ['config', 'user.email', email]);
+            yield exec.exec('git', ['config', 'user.name', username]);
+            core.info('Setting up git config for ssh command');
+            const sshCommand = `ssh -i ${sshDir}/id_rsa -o UserKnownHostsFile=${sshDir}/known_hosts`;
+            yield exec.exec('git', ['config', 'core.sshCommand', sshCommand]);
+            core.info('Setting git remote url');
+            const repoFullName = process.env['GITHUB_REPOSITORY'];
+            const origin = `git@github.com:${repoFullName}.git`;
+            yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
+        }
+        else {
+            core.saveState('skipGitDeployKey', 'true');
+            core.info('skipping git setup: GIT_DEPLOY_KEY not provided');
+        }
     });
 }
 exports.setupNpmPublish = setupNpmPublish;
 function cleanupNpmPublish() {
     return __awaiter(this, void 0, void 0, function* () {
-        const keyPath = getSshPath('id_rsa');
-        const knownHosts = getSshPath('known_hosts');
+        const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true';
         core.info('Shredding files containing secrets');
-        yield exec.exec('shred', ['-zuf', keyPath]);
-        yield exec.exec('shred', ['-zuf', knownHosts]);
+        if (!gitDeploySkipped) {
+            const keyPath = getSshPath('id_rsa');
+            const knownHosts = getSshPath('known_hosts');
+            yield exec.exec('shred', ['-zuf', keyPath]);
+            yield exec.exec('shred', ['-zuf', knownHosts]);
+        }
         yield exec.exec('shred', ['-zf', '.npmrc']);
         core.info('Resetting .npmrc');
         yield exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc']);
-        yield exec.exec('git', ['checkout', '.npmrc']);
-        core.info('Unsettings git config');
-        yield exec.exec('git', ['config', '--unset', 'user.email']);
-        yield exec.exec('git', ['config', '--unset', 'user.name']);
-        yield exec.exec('git', ['config', '--unset', 'core.sshCommand']);
-        core.info('Resetting git remote url');
-        const repoFullName = process.env['GITHUB_REPOSITORY'];
-        const origin = `https://github.com/${repoFullName}`;
-        yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
+        yield exec.exec('git', ['checkout', '--', '.npmrc']);
+        if (!gitDeploySkipped) {
+            core.info('Unsetting git config');
+            yield exec.exec('git', ['config', '--unset', 'user.email']);
+            yield exec.exec('git', ['config', '--unset', 'user.name']);
+            yield exec.exec('git', ['config', '--unset', 'core.sshCommand']);
+            core.info('Resetting git remote url');
+            const repoFullName = process.env['GITHUB_REPOSITORY'];
+            const origin = `https://github.com/${repoFullName}`;
+            yield exec.exec('git', ['remote', 'set-url', 'origin', origin]);
+        }
     });
 }
 exports.cleanupNpmPublish = cleanupNpmPublish;
