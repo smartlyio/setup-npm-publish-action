@@ -96,5 +96,4 @@ jobs:
       - name: Release flow
         uses: smartlyio/github-actions@release-action-node-v1
         with:
-          dry_run: true
           token: "${{ secrets.GITHUB_TOKEN }}"
