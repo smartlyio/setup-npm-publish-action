@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -45,7 +45,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -81,3 +81,22 @@ jobs:
 
         # Just check that it is altered from default
         [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
+
+  release:
+    runs-on: ubuntu-20.04
+    name: "Build and release action"
+    needs: [build, test]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Release flow
+        uses: smartlyio/github-actions@release-action-node-v1
+        with:
+          dry_run: true
+          token: "${{ secrets.GITHUB_TOKEN }}"
