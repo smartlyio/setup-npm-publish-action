@@ -1,0 +1,25 @@
+- name: Test executing the action
+  uses: ./
+  env:
+    GIT_DEPLOY_KEY: not-a-real-key
+    AUTH_TOKEN_STRING: definitely-real-token
+  with:
+    email: ${{ env.EMAIL_INPUT }}
+    username: ${{ env.USERNAME_INPUT }}
+- run: |
+    set -u
+    cat "$RUNNER_TEMP/setup-npm-publish-action/id_rsa"
+    echo
+    git config user.name
+    git config user.email
+    git remote get-url origin
+    git config core.sshCommand
+    grep '^github\.com' "$RUNNER_TEMP/setup-npm-publish-action/known_hosts"
+    
+    [[ "$(cat "$RUNNER_TEMP/setup-npm-publish-action/id_rsa")" == "not-a-real-key" ]]
+    [[ "$(git config user.name)" == "${{ env.USERNAME_INPUT }}" ]]
+    [[ "$(git config user.email)" == "${{ env.EMAIL_INPUT }}" ]]
+    [[ "$(git remote get-url origin)" == "git@github.com:$GITHUB_REPOSITORY.git" ]]
+    
+    # Just check that it is altered from default
+    [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
