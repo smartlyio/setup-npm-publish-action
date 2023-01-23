@@ -1,6 +1,6 @@
 {
   "name": "setup-npm-publish-action",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "private": true,
   "description": "Sets up npm tokens for publishing packages.",
   "main": "lib/main.js",

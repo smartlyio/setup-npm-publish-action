@@ -41,6 +41,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const setup_npm_publish_1 = __nccwpck_require__(104);
+const fs_1 = __nccwpck_require__(147);
 function isPost() {
     // Will be false if the environment variable doesn't exist; true if it does.
     return !!process.env['STATE_isPost'];
@@ -55,10 +56,27 @@ function run() {
             const deployKey = process.env['GIT_DEPLOY_KEY'] || null;
             const token = process.env['AUTH_TOKEN_STRING'] || null;
             if (!post) {
-                yield (0, setup_npm_publish_1.setupNpmPublish)(email, username, deployKey, token);
+                let npmrcExists = false;
+                try {
+                    yield fs_1.promises.access('.npmrc', fs_1.constants.F_OK);
+                    npmrcExists = true;
+                }
+                catch (_a) {
+                    /* NOOP */
+                }
+                yield (0, setup_npm_publish_1.setupNpmPublish)(email, username, deployKey, token, npmrcExists);
             }
             else {
-                yield (0, setup_npm_publish_1.cleanupNpmPublish)();
+                let npmrcInGitExcluded = false;
+                try {
+                    yield fs_1.promises.access('.git/info/exclude', fs_1.constants.F_OK);
+                    npmrcInGitExcluded =
+                        (yield fs_1.promises.readFile('.git/info/exclude', 'utf-8')).match(/^\.npmrc$/m) != null;
+                }
+                catch (_b) {
+                    /* NOOP */
+                }
+                yield (0, setup_npm_publish_1.cleanupNpmPublish)(npmrcInGitExcluded);
             }
         }
         catch (error) {
@@ -148,7 +166,7 @@ function sshKeyscan() {
     });
 }
 exports.sshKeyscan = sshKeyscan;
-function setupNpmPublish(email, username, deployKey, token) {
+function setupNpmPublish(email, username, deployKey, token, npmrcDidExist) {
     return __awaiter(this, void 0, void 0, function* () {
         const keyPath = getSshPath('id_rsa');
         const knownHostsPath = getSshPath('known_hosts');
@@ -161,7 +179,20 @@ function setupNpmPublish(email, username, deployKey, token) {
         // Is this still needed?
         yield fs_1.promises.appendFile('.npmrc', `\n${exports.UNSAFE_PERM}\n`);
         core.info('Marking .npmrc as unmodified to avoid committing the keys');
-        yield exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc']);
+        if (npmrcDidExist) {
+            yield exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc']);
+        }
+        else {
+            core.info('.npmrc did not exist before running the action');
+            // Mark it as excluded locally
+            try {
+                yield fs_1.promises.access('.git/info/exclude', fs_1.constants.F_OK);
+                yield fs_1.promises.appendFile('.git/info/exclude', `\n.npmrc\n`);
+            }
+            catch (_a) {
+                core.info('The .git folder does not exist');
+            }
+        }
         if (deployKey) {
             core.info(`Writing deploy key to ${keyPath}`);
             yield fs_1.promises.writeFile(keyPath, `${deployKey}\n`, { mode: 0o400 });
@@ -186,7 +217,7 @@ function setupNpmPublish(email, username, deployKey, token) {
     });
 }
 exports.setupNpmPublish = setupNpmPublish;
-function cleanupNpmPublish() {
+function cleanupNpmPublish(npmrcInGitExcluded) {
     return __awaiter(this, void 0, void 0, function* () {
         const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true';
         core.info('Shredding files containing secrets');
@@ -196,10 +227,14 @@ function cleanupNpmPublish() {
             yield exec.exec('shred', ['-zuf', keyPath]);
             yield exec.exec('shred', ['-zuf', knownHosts]);
         }
-        yield exec.exec('shred', ['-zf', '.npmrc']);
-        core.info('Resetting .npmrc');
-        yield exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc']);
-        yield exec.exec('git', ['checkout', '--', '.npmrc']);
+        if (npmrcInGitExcluded) {
+            yield exec.exec('shred', ['-zfu', '.npmrc']);
+        }
+        else {
+            yield exec.exec('shred', ['-zf', '.npmrc']);
+            yield exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc']);
+            yield exec.exec('git', ['checkout', '--', '.npmrc']);
+        }
         if (!gitDeploySkipped) {
             core.info('Unsetting git config');
             yield exec.exec('git', ['config', '--unset', 'user.email']);
