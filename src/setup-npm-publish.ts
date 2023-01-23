@@ -3,7 +3,7 @@ import * as exec from '@actions/exec'
 
 import * as path from 'path'
 import * as process from 'process'
-import {promises as fs} from 'fs'
+import {constants, promises as fs} from 'fs'
 
 export const UNSAFE_PERM = 'unsafe-perm = true'
 
@@ -41,7 +41,8 @@ export async function setupNpmPublish(
   email: string,
   username: string,
   deployKey: string | null,
-  token: string | null
+  token: string | null,
+  npmrcDidExist: boolean
 ): Promise<void> {
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
@@ -56,7 +57,18 @@ export async function setupNpmPublish(
   await fs.appendFile('.npmrc', `\n${UNSAFE_PERM}\n`)
 
   core.info('Marking .npmrc as unmodified to avoid committing the keys')
-  await exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc'])
+  if (npmrcDidExist) {
+    await exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc'])
+  } else {
+    core.info('.npmrc did not exist before running the action')
+    // Mark it as excluded locally
+    try {
+      await fs.access('.git/info/exclude', constants.F_OK)
+      await fs.appendFile('.git/info/exclude', `\n.npmrc\n`)
+    } catch {
+      core.info('The .git folder does not exist')
+    }
+  }
 
   if (deployKey) {
     core.info(`Writing deploy key to ${keyPath}`)
@@ -84,7 +96,9 @@ export async function setupNpmPublish(
   }
 }
 
-export async function cleanupNpmPublish(): Promise<void> {
+export async function cleanupNpmPublish(
+  npmrcInGitExcluded: boolean
+): Promise<void> {
   const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true'
 
   core.info('Shredding files containing secrets')
@@ -95,11 +109,14 @@ export async function cleanupNpmPublish(): Promise<void> {
     await exec.exec('shred', ['-zuf', keyPath])
     await exec.exec('shred', ['-zuf', knownHosts])
   }
-  await exec.exec('shred', ['-zf', '.npmrc'])
 
-  core.info('Resetting .npmrc')
-  await exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc'])
-  await exec.exec('git', ['checkout', '--', '.npmrc'])
+  if (npmrcInGitExcluded) {
+    await exec.exec('shred', ['-zfu', '.npmrc'])
+  } else {
+    await exec.exec('shred', ['-zf', '.npmrc'])
+    await exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc'])
+    await exec.exec('git', ['checkout', '--', '.npmrc'])
+  }
 
   if (!gitDeploySkipped) {
     core.info('Unsetting git config')

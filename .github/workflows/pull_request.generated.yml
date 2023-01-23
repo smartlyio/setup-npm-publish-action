@@ -56,6 +56,9 @@ jobs:
         npm run build
         npm run package
         git clean -fXd
+    - uses: webiny/action-post-run@3.0.0
+      with:
+        run: .github/scripts/test_post.sh
     - name: Test executing the action
       uses: ./
       env:
@@ -82,10 +85,71 @@ jobs:
         # Just check that it is altered from default
         [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
 
+  test-missing-npmrc:
+    runs-on: ubuntu-20.04
+    env:
+      EMAIL_INPUT: test@example.com
+      USERNAME_INPUT: example-test
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set Node.js 16.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - name: "Build action for test"
+      run: |
+        npm install
+        npm run build
+        npm run package
+        git clean -fXd
+    - run: |
+        git config --global user.email "fake@fake.com"
+        git config --global user.name "Testing"
+        git rm .npmrc
+        git commit -m "mark removed npmrc file"
+    - uses: webiny/action-post-run@3.0.0
+      with:
+        run: .github/scripts/test_missing_npmrc_post.sh
+    - name: Test executing the action
+      uses: ./
+      env:
+        GIT_DEPLOY_KEY: not-a-real-key
+        AUTH_TOKEN_STRING: definitely-real-token
+      with:
+        email: ${{ env.EMAIL_INPUT }}
+        username: ${{ env.USERNAME_INPUT }}
+    - run: |
+        set -u
+        cat "$RUNNER_TEMP/setup-npm-publish-action/id_rsa"
+        echo
+        git config user.name
+        git config user.email
+        git remote get-url origin
+        git config core.sshCommand
+        grep '^github\.com' "$RUNNER_TEMP/setup-npm-publish-action/known_hosts"
+
+        [[ "$(cat "$RUNNER_TEMP/setup-npm-publish-action/id_rsa")" == "not-a-real-key" ]]
+        [[ "$(git config user.name)" == "${{ env.USERNAME_INPUT }}" ]]
+        [[ "$(git config user.email)" == "${{ env.EMAIL_INPUT }}" ]]
+        [[ "$(git remote get-url origin)" == "git@github.com:$GITHUB_REPOSITORY.git" ]]
+
+        # Just check that it is altered from default
+        [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
+
+  test-all:
+    needs:
+      - test
+      - test-missing-npmrc
+    runs-on: ubuntu-20.04
+    steps:
+      - run: |
+          echo "Ok"
+        shell: bash
+
   release:
     runs-on: ubuntu-20.04
     name: "Build and release action"
-    needs: [build, test]
+    needs: [build, test-all]
     steps:
       - uses: actions/checkout@v3
         with:

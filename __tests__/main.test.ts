@@ -1,18 +1,18 @@
 // import {core} from '@actions/core';
 import {getState} from '@actions/core'
 import {exec} from '@actions/exec'
-import {promises as fs} from 'fs'
 import * as fssync from 'fs'
+import {promises as fs} from 'fs'
 import * as path from 'path'
 import {mocked} from 'jest-mock'
 
 import {
-  UNSAFE_PERM,
+  cleanupNpmPublish,
   getEnv,
   getSshPath,
-  sshKeyscan,
   setupNpmPublish,
-  cleanupNpmPublish
+  sshKeyscan,
+  UNSAFE_PERM
 } from '../src/setup-npm-publish'
 
 jest.mock('@actions/core', () => ({
@@ -90,13 +90,14 @@ describe('test npm-setup-publish', () => {
       const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
+      await fs.writeFile('.npmrc', '')
 
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
       const token = 'this is an npmrc file'
 
-      await setupNpmPublish(email, username, deployKey, token)
+      await setupNpmPublish(email, username, deployKey, token, true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`${token}
@@ -147,13 +148,14 @@ ${UNSAFE_PERM}
       const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
+      await fs.writeFile('.npmrc', '')
 
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
       const token = null
 
-      await setupNpmPublish(email, username, deployKey, token)
+      await setupNpmPublish(email, username, deployKey, token, true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`
@@ -204,13 +206,14 @@ ${UNSAFE_PERM}
       const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
+      await fs.writeFile('.npmrc', '')
 
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = null
       const token = 'this is an npmrc file'
 
-      await setupNpmPublish(email, username, deployKey, token)
+      await setupNpmPublish(email, username, deployKey, token, true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`${token}
@@ -224,6 +227,27 @@ ${UNSAFE_PERM}
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
+    })
+
+    test('non-existing .npmrc file', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+
+      const email = 'user@example.com'
+      const username = 'Example User'
+      const deployKey = null
+      const token = 'this is an npmrc file'
+
+      await setupNpmPublish(email, username, deployKey, token, false)
+
+      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
+      expect(tokenData.toString()).toEqual(`${token}
+${UNSAFE_PERM}
+`)
+
+      const mockExec = mocked(exec)
+      expect(mockExec.mock.calls.length).toEqual(0)
     })
   })
 
@@ -239,7 +263,7 @@ ${UNSAFE_PERM}
         'setup-npm-publish-action',
         'known_hosts'
       )
-      await cleanupNpmPublish()
+      await cleanupNpmPublish(false)
 
       const mockGetState = mocked(getState)
       const mockExec = mocked(exec)
@@ -285,7 +309,7 @@ ${UNSAFE_PERM}
       const mockGetState = mocked(getState)
       mockGetState.mockReturnValue('true')
 
-      await cleanupNpmPublish()
+      await cleanupNpmPublish(false)
 
       const mockExec = mocked(exec)
 
@@ -301,6 +325,20 @@ ${UNSAFE_PERM}
         'git',
         ['checkout', '--', '.npmrc']
       ])
+    })
+
+    test('without .npmrc', async () => {
+      const mockGetState = mocked(getState)
+      mockGetState.mockReturnValue('true')
+
+      await cleanupNpmPublish(true)
+
+      const mockExec = mocked(exec)
+
+      expect(mockGetState.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(1)
+
+      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zfu', '.npmrc']])
     })
   })
 })
