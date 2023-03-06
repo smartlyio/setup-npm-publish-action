@@ -9,6 +9,10 @@ inputs:
     description: 'Username to use with git'
     required: false
     default: 'Github Action'
+  npmrc_path:
+    description: 'Relative path to npmrc file'
+    required: false
+    default: '.npmrc'
 runs:
   using: "node16"
   main: "dist/index.js"

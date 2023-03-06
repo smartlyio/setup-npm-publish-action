@@ -13,32 +13,33 @@ async function run(): Promise<void> {
     core.saveState('isPost', post)
     const email: string = core.getInput('email')
     const username: string = core.getInput('username')
+    const npmrcPath: string = core.getInput('npmrc_path')
     const deployKey: string | null = process.env['GIT_DEPLOY_KEY'] || null
     const token: string | null = process.env['AUTH_TOKEN_STRING'] || null
 
     if (!post) {
       let npmrcExists = false
       try {
-        await fs.access('.npmrc', constants.F_OK)
+        await fs.access(npmrcPath, constants.F_OK)
         npmrcExists = true
       } catch {
         /* NOOP */
       }
 
-      await setupNpmPublish(email, username, deployKey, token, npmrcExists)
+      await setupNpmPublish(email, username, deployKey, token, npmrcPath, npmrcExists)
     } else {
       let npmrcInGitExcluded = false
       try {
         await fs.access('.git/info/exclude', constants.F_OK)
         npmrcInGitExcluded =
           (await fs.readFile('.git/info/exclude', 'utf-8')).match(
-            /^\.npmrc$/m
+            new RegExp(`^${npmrcPath}$`, 'm')
           ) != null
       } catch {
         /* NOOP */
       }
 
-      await cleanupNpmPublish(npmrcInGitExcluded)
+      await cleanupNpmPublish(npmrcPath, npmrcInGitExcluded)
     }
   } catch (error) {
     core.setFailed((error as Error).message)

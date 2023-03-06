@@ -42,7 +42,8 @@ export async function setupNpmPublish(
   username: string,
   deployKey: string | null,
   token: string | null,
-  npmrcDidExist: boolean
+  npmrcPath: string,
+  npmrcDidExist: boolean,
 ): Promise<void> {
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
@@ -51,20 +52,20 @@ export async function setupNpmPublish(
 
   if (token) {
     core.info(`Writing token file to .npmrc`)
-    await fs.writeFile('.npmrc', token)
+    await fs.writeFile(npmrcPath, token)
   }
   // Is this still needed?
-  await fs.appendFile('.npmrc', `\n${UNSAFE_PERM}\n`)
+  await fs.appendFile(npmrcPath, `\n${UNSAFE_PERM}\n`)
 
   core.info('Marking .npmrc as unmodified to avoid committing the keys')
   if (npmrcDidExist) {
-    await exec.exec('git', ['update-index', '--assume-unchanged', '.npmrc'])
+    await exec.exec('git', ['update-index', '--assume-unchanged', npmrcPath])
   } else {
     core.info('.npmrc did not exist before running the action')
     // Mark it as excluded locally
     try {
       await fs.access('.git/info/exclude', constants.F_OK)
-      await fs.appendFile('.git/info/exclude', `\n.npmrc\n`)
+      await fs.appendFile('.git/info/exclude', `\n${npmrcPath}\n`)
     } catch {
       core.info('The .git folder does not exist')
     }
@@ -97,7 +98,8 @@ export async function setupNpmPublish(
 }
 
 export async function cleanupNpmPublish(
-  npmrcInGitExcluded: boolean
+  npmrcPath: string,
+  npmrcInGitExcluded: boolean,
 ): Promise<void> {
   const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true'
 
@@ -111,11 +113,11 @@ export async function cleanupNpmPublish(
   }
 
   if (npmrcInGitExcluded) {
-    await exec.exec('shred', ['-zfu', '.npmrc'])
+    await exec.exec('shred', ['-zfu', npmrcPath])
   } else {
-    await exec.exec('shred', ['-zf', '.npmrc'])
-    await exec.exec('git', ['update-index', '--no-assume-unchanged', '.npmrc'])
-    await exec.exec('git', ['checkout', '--', '.npmrc'])
+    await exec.exec('shred', ['-zf', npmrcPath])
+    await exec.exec('git', ['update-index', '--no-assume-unchanged', npmrcPath])
+    await exec.exec('git', ['checkout', '--', npmrcPath])
   }
 
   if (!gitDeploySkipped) {

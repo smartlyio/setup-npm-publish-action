@@ -97,7 +97,7 @@ describe('test npm-setup-publish', () => {
       const deployKey = 'definitely an ssh key'
       const token = 'this is an npmrc file'
 
-      await setupNpmPublish(email, username, deployKey, token, true)
+      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`${token}
@@ -155,7 +155,7 @@ ${UNSAFE_PERM}
       const deployKey = 'definitely an ssh key'
       const token = null
 
-      await setupNpmPublish(email, username, deployKey, token, true)
+      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`
@@ -213,7 +213,7 @@ ${UNSAFE_PERM}
       const deployKey = null
       const token = 'this is an npmrc file'
 
-      await setupNpmPublish(email, username, deployKey, token, true)
+      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`${token}
@@ -239,7 +239,7 @@ ${UNSAFE_PERM}
       const deployKey = null
       const token = 'this is an npmrc file'
 
-      await setupNpmPublish(email, username, deployKey, token, false)
+      await setupNpmPublish(email, username, deployKey, token, '.npmrc', false)
 
       const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
       expect(tokenData.toString()).toEqual(`${token}
@@ -248,6 +248,67 @@ ${UNSAFE_PERM}
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(0)
+    })
+
+    test('non-root npmrc', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const directory = `testdir`
+      const npmrcPath = path.join(directory, `.npmrc`)
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.mkdir(directory, {recursive: true})
+      await fs.writeFile(npmrcPath, '')
+
+      const email = 'user@example.com'
+      const username = 'Example User'
+      const deployKey = 'definitely an ssh key'
+      const token = 'this is an npmrc file'
+
+      await setupNpmPublish(email, username, deployKey, token, npmrcPath, true)
+
+      const tokenData = await fs.readFile(path.join(repository, npmrcPath))
+      expect(tokenData.toString()).toEqual(`${token}
+${UNSAFE_PERM}
+`)
+
+      const sshKeyData = await fs.readFile(
+        path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
+      )
+      expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
+
+      const mockExec = mocked(exec)
+      expect(mockExec.mock.calls.length).toEqual(6)
+
+      expect(mockExec.mock.calls[0]).toEqual([
+        'git',
+        ['update-index', '--assume-unchanged', npmrcPath]
+      ])
+      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[2]).toEqual([
+        'git',
+        ['config', 'user.email', email]
+      ])
+      expect(mockExec.mock.calls[3]).toEqual([
+        'git',
+        ['config', 'user.name', username]
+      ])
+      expect(mockExec.mock.calls[4]).toEqual([
+        'git',
+        [
+          'config',
+          'core.sshCommand',
+          expect.stringContaining('UserKnownHostsFile')
+        ]
+      ])
+      expect(mockExec.mock.calls[5]).toEqual([
+        'git',
+        [
+          'remote',
+          'set-url',
+          'origin',
+          `git@github.com:${githubRepository}.git`
+        ]
+      ])
     })
   })
 
@@ -263,7 +324,7 @@ ${UNSAFE_PERM}
         'setup-npm-publish-action',
         'known_hosts'
       )
-      await cleanupNpmPublish(false)
+      await cleanupNpmPublish('.npmrc', false)
 
       const mockGetState = mocked(getState)
       const mockExec = mocked(exec)
@@ -309,7 +370,7 @@ ${UNSAFE_PERM}
       const mockGetState = mocked(getState)
       mockGetState.mockReturnValue('true')
 
-      await cleanupNpmPublish(false)
+      await cleanupNpmPublish('.npmrc', false)
 
       const mockExec = mocked(exec)
 
@@ -327,11 +388,34 @@ ${UNSAFE_PERM}
       ])
     })
 
+    test('non-root npmrc', async () => {
+      const mockGetState = mocked(getState)
+      mockGetState.mockReturnValue('true')
+      const npmrcPath = 'testdir/.npmrc'
+
+      await cleanupNpmPublish(npmrcPath, false)
+
+      const mockExec = mocked(exec)
+
+      expect(mockGetState.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(3)
+
+      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zf', npmrcPath]])
+      expect(mockExec.mock.calls[1]).toEqual([
+        'git',
+        ['update-index', '--no-assume-unchanged', npmrcPath]
+      ])
+      expect(mockExec.mock.calls[2]).toEqual([
+        'git',
+        ['checkout', '--', npmrcPath]
+      ])
+    })
+
     test('without .npmrc', async () => {
       const mockGetState = mocked(getState)
       mockGetState.mockReturnValue('true')
 
-      await cleanupNpmPublish(true)
+      await cleanupNpmPublish('.npmrc', true)
 
       const mockExec = mocked(exec)
 
