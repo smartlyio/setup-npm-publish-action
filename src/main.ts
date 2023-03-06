@@ -26,7 +26,14 @@ async function run(): Promise<void> {
         /* NOOP */
       }
 
-      await setupNpmPublish(email, username, deployKey, token, npmrcPath, npmrcExists)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        token,
+        npmrcPath,
+        npmrcExists
+      )
     } else {
       let npmrcInGitExcluded = false
       try {

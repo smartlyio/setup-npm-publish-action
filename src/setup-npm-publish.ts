@@ -43,7 +43,7 @@ export async function setupNpmPublish(
   deployKey: string | null,
   token: string | null,
   npmrcPath: string,
-  npmrcDidExist: boolean,
+  npmrcDidExist: boolean
 ): Promise<void> {
   const keyPath = getSshPath('id_rsa')
   const knownHostsPath = getSshPath('known_hosts')
@@ -99,7 +99,7 @@ export async function setupNpmPublish(
 
 export async function cleanupNpmPublish(
   npmrcPath: string,
-  npmrcInGitExcluded: boolean,
+  npmrcInGitExcluded: boolean
 ): Promise<void> {
   const gitDeploySkipped = core.getState('skipGitDeployKey') === 'true'
 
