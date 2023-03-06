@@ -38,9 +38,10 @@ async function run(): Promise<void> {
       let npmrcInGitExcluded = false
       try {
         await fs.access('.git/info/exclude', constants.F_OK)
+        const npmrcPathRegex = npmrcPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         npmrcInGitExcluded =
           (await fs.readFile('.git/info/exclude', 'utf-8')).match(
-            new RegExp(`^${npmrcPath}$`, 'm')
+            new RegExp(`^${npmrcPathRegex}$`, 'm')
           ) != null
       } catch {
         /* NOOP */
