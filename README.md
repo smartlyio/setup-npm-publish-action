@@ -9,7 +9,7 @@ Action to setup npm and git for npm publish. It appends authentication tokens to
 |------------|-----------|-----------------------------|
 | email      | no        | Email to use with git       |
 | username   | no        | Username to use with git    |
-| npmrc_path | no        | Relative path to npmrc file |
+| npmrc-path | no        | Relative path to npmrc file |
 
 ## Environment variables
 
