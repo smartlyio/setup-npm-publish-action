@@ -13,7 +13,7 @@ async function run(): Promise<void> {
     core.saveState('isPost', post)
     const email: string = core.getInput('email')
     const username: string = core.getInput('username')
-    const npmrcPath: string = core.getInput('npmrc_path')
+    const npmrcPath: string = core.getInput('npmrc-path')
     const deployKey: string | null = process.env['GIT_DEPLOY_KEY'] || null
     const token: string | null = process.env['AUTH_TOKEN_STRING'] || null
 

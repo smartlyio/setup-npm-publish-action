@@ -9,7 +9,7 @@ inputs:
     description: 'Username to use with git'
     required: false
     default: 'Github Action'
-  npmrc_path:
+  npmrc-path:
     description: 'Relative path to npmrc file'
     required: false
     default: '.npmrc'
