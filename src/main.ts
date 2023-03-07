@@ -21,6 +21,7 @@ async function run(): Promise<void> {
       let npmrcExists = false
       try {
         await fs.access(npmrcPath, constants.F_OK)
+        core.info(`${npmrcPath} file exists in the repo`)
         npmrcExists = true
       } catch {
         /* NOOP */

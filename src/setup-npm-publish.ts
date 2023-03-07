@@ -51,17 +51,17 @@ export async function setupNpmPublish(
   await fs.mkdir(sshDir, {recursive: true})
 
   if (token) {
-    core.info(`Writing token file to .npmrc`)
+    core.info(`Writing token file to ${npmrcPath}`)
     await fs.writeFile(npmrcPath, token)
   }
   // Is this still needed?
   await fs.appendFile(npmrcPath, `\n${UNSAFE_PERM}\n`)
 
-  core.info('Marking .npmrc as unmodified to avoid committing the keys')
+  core.info(`Marking ${npmrcPath} as unmodified to avoid committing the keys`)
   if (npmrcDidExist) {
     await exec.exec('git', ['update-index', '--assume-unchanged', npmrcPath])
   } else {
-    core.info('.npmrc did not exist before running the action')
+    core.info(`${npmrcPath} did not exist before running the action`)
     // Mark it as excluded locally
     try {
       await fs.access('.git/info/exclude', constants.F_OK)
