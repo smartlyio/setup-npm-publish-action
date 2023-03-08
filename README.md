@@ -5,10 +5,11 @@ Action to setup npm and git for npm publish. It appends authentication tokens to
 
 ## Inputs
 
-| Input    | Required  | Description              |
-|----------|-----------|--------------------------|
-| email    | no        | Email to use with git    |
-| username | no        | Username to use with git |
+| Input      | Required  | Description                 |
+|------------|-----------|-----------------------------|
+| email      | no        | Email to use with git       |
+| username   | no        | Username to use with git    |
+| npmrc-path | no        | Relative path to npmrc file |
 
 ## Environment variables
 
