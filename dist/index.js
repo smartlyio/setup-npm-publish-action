@@ -230,7 +230,14 @@ function cleanupNpmPublish(npmrcPath, npmrcInGitExcluded) {
             yield exec.exec('shred', ['-zuf', keyPath]);
             yield exec.exec('shred', ['-zuf', knownHosts]);
         }
-        if (npmrcInGitExcluded) {
+        let isGitRepo = true;
+        try {
+            yield exec.exec('git', ['rev-parse', '--is-inside-work-tree']);
+        }
+        catch (_a) {
+            isGitRepo = false;
+        }
+        if (npmrcInGitExcluded || !isGitRepo) {
             yield exec.exec('shred', ['-zfu', npmrcPath]);
         }
         else {
@@ -238,7 +245,7 @@ function cleanupNpmPublish(npmrcPath, npmrcInGitExcluded) {
             yield exec.exec('git', ['update-index', '--no-assume-unchanged', npmrcPath]);
             yield exec.exec('git', ['checkout', '--', npmrcPath]);
         }
-        if (!gitDeploySkipped) {
+        if (isGitRepo && !gitDeploySkipped) {
             core.info('Unsetting git config');
             yield exec.exec('git', ['config', '--unset', 'user.email']);
             yield exec.exec('git', ['config', '--unset', 'user.name']);
