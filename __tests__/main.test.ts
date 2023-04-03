@@ -330,32 +330,36 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
 
       expect(mockGetState.mock.calls.length).toEqual(1)
-      expect(mockExec.mock.calls.length).toEqual(9)
+      expect(mockExec.mock.calls.length).toEqual(10)
 
       expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zuf', keyPath]])
       expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zuf', hostsPath]])
-      expect(mockExec.mock.calls[2]).toEqual(['shred', ['-zf', '.npmrc']])
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[2]).toEqual([
+        'git',
+        ['rev-parse', '--is-inside-work-tree']
+      ])
+      expect(mockExec.mock.calls[3]).toEqual(['shred', ['-zf', '.npmrc']])
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['update-index', '--no-assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         ['checkout', '--', '.npmrc']
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         ['config', '--unset', 'user.email']
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[7]).toEqual([
         'git',
         ['config', '--unset', 'user.name']
       ])
-      expect(mockExec.mock.calls[7]).toEqual([
+      expect(mockExec.mock.calls[8]).toEqual([
         'git',
         ['config', '--unset', 'core.sshCommand']
       ])
-      expect(mockExec.mock.calls[8]).toEqual([
+      expect(mockExec.mock.calls[9]).toEqual([
         'git',
         [
           'remote',
@@ -375,14 +379,18 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
 
       expect(mockGetState.mock.calls.length).toEqual(1)
-      expect(mockExec.mock.calls.length).toEqual(3)
+      expect(mockExec.mock.calls.length).toEqual(4)
 
-      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zf', '.npmrc']])
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[0]).toEqual([
+        'git',
+        ['rev-parse', '--is-inside-work-tree']
+      ])
+      expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zf', '.npmrc']])
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--no-assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[2]).toEqual([
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['checkout', '--', '.npmrc']
       ])
@@ -398,14 +406,18 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
 
       expect(mockGetState.mock.calls.length).toEqual(1)
-      expect(mockExec.mock.calls.length).toEqual(3)
+      expect(mockExec.mock.calls.length).toEqual(4)
 
-      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zf', npmrcPath]])
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[0]).toEqual([
+        'git',
+        ['rev-parse', '--is-inside-work-tree']
+      ])
+      expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zf', npmrcPath]])
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--no-assume-unchanged', npmrcPath]
       ])
-      expect(mockExec.mock.calls[2]).toEqual([
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['checkout', '--', npmrcPath]
       ])
@@ -420,9 +432,13 @@ ${UNSAFE_PERM}
       const mockExec = mocked(exec)
 
       expect(mockGetState.mock.calls.length).toEqual(1)
-      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(2)
 
-      expect(mockExec.mock.calls[0]).toEqual(['shred', ['-zfu', '.npmrc']])
+      expect(mockExec.mock.calls[0]).toEqual([
+        'git',
+        ['rev-parse', '--is-inside-work-tree']
+      ])
+      expect(mockExec.mock.calls[1]).toEqual(['shred', ['-zfu', '.npmrc']])
     })
   })
 })
