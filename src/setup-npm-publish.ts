@@ -112,7 +112,14 @@ export async function cleanupNpmPublish(
     await exec.exec('shred', ['-zuf', knownHosts])
   }
 
-  if (npmrcInGitExcluded) {
+  let isGitRepo = true
+  try {
+    await exec.exec('git', ['rev-parse', '--is-inside-work-tree'])
+  } catch {
+    isGitRepo = false
+  }
+
+  if (npmrcInGitExcluded || !isGitRepo) {
     await exec.exec('shred', ['-zfu', npmrcPath])
   } else {
     await exec.exec('shred', ['-zf', npmrcPath])
@@ -120,7 +127,7 @@ export async function cleanupNpmPublish(
     await exec.exec('git', ['checkout', '--', npmrcPath])
   }
 
-  if (!gitDeploySkipped) {
+  if (isGitRepo && !gitDeploySkipped) {
     core.info('Unsetting git config')
     await exec.exec('git', ['config', '--unset', 'user.email'])
     await exec.exec('git', ['config', '--unset', 'user.name'])
