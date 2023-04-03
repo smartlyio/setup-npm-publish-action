@@ -43,6 +43,7 @@ test-missing-npmrc:
 test-all:
   needs:
     - test
+    - test-cleanup-non-repo
     - test-missing-npmrc
   runs-on: <%= ubuntu_version %>
   steps:
