@@ -37,6 +37,41 @@ export async function sshKeyscan(): Promise<string> {
   return stdout
 }
 
+export async function updateNpmRc(
+  npmrcPath: string,
+  contents: string | null
+): Promise<void> {
+  if (contents) {
+    const lines = contents.trim().split('\n')
+
+    core.info(`Updating npm configuration ${npmrcPath}`)
+    for (const line of lines) {
+      const match = line.match(/^(?<key>[^=]+?)\s*=\s*(?<value>.*)$/)
+      if (match && match.groups) {
+        const key = match.groups.key
+        const value = match.groups.value
+        await exec.exec('npm', [
+          'config',
+          'set',
+          '--location',
+          'project',
+          key,
+          value
+        ])
+      }
+    }
+  }
+  // Is this still needed?
+  await exec.exec('npm', [
+    'config',
+    'set',
+    '--location',
+    'project',
+    'unsafe-perm',
+    'true'
+  ])
+}
+
 export async function setupNpmPublish(
   email: string,
   username: string,
@@ -50,12 +85,7 @@ export async function setupNpmPublish(
   const sshDir = path.dirname(keyPath)
   await fs.mkdir(sshDir, {recursive: true})
 
-  if (token) {
-    core.info(`Writing token file to ${npmrcPath}`)
-    await fs.writeFile(npmrcPath, token)
-  }
-  // Is this still needed?
-  await fs.appendFile(npmrcPath, `\n${UNSAFE_PERM}\n`)
+  await updateNpmRc(npmrcPath, token)
 
   core.info(`Marking ${npmrcPath} as unmodified to avoid committing the keys`)
   if (npmrcDidExist) {
