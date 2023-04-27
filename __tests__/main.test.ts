@@ -30,17 +30,27 @@ const {exec: actualExec} = jest.requireActual('@actions/exec')
 
 const UNSAFE_PERM = /unsafe-perm\s*=\s*true/
 
-function matchNpmrcOptions (values: Record<string, string>, npmrcContent: string): void {
+function matchNpmrcOptions(
+  values: Record<string, string>,
+  npmrcContent: string
+): void {
   for (const key in values) {
     const value = values[key]
-    expect(npmrcContent.toString()).toMatch(new RegExp(`^${key}\\s*=\\s*${value}$`, 'm'))
+    expect(npmrcContent.toString()).toMatch(
+      new RegExp(`^${key}\\s*=\\s*${value}$`, 'm')
+    )
   }
 }
 
-function negativeMatchNpmrcOptions (values: Record<string, string>, npmrcContent: string): void {
+function negativeMatchNpmrcOptions(
+  values: Record<string, string>,
+  npmrcContent: string
+): void {
   for (const key in values) {
     const value = values[key]
-    expect(npmrcContent.toString()).not.toMatch(new RegExp(`^${key}\\s*=\\s*${value}$`, 'm'))
+    expect(npmrcContent.toString()).not.toMatch(
+      new RegExp(`^${key}\\s*=\\s*${value}$`, 'm')
+    )
   }
 }
 
@@ -83,7 +93,9 @@ describe('test npm-setup-publish', () => {
   describe('git configutation', () => {
     test('get ssh path', () => {
       const filePath = getSshPath('id_rsa')
-      expect(filePath).toEqual(`${runnerTempDir}/setup-npm-publish-action/id_rsa`)
+      expect(filePath).toEqual(
+        `${runnerTempDir}/setup-npm-publish-action/id_rsa`
+      )
     })
 
     test('ssh-keyscan', async () => {
@@ -125,7 +137,7 @@ describe('test npm-setup-publish', () => {
       const options: Record<string, string> = {
         'always-auth': 'true',
         'unsafe-perm': 'true'
-      };
+      }
 
       matchNpmrcOptions(options, npmrcContent)
     })
@@ -148,7 +160,7 @@ describe('test npm-setup-publish', () => {
       const options: Record<string, string> = {
         'always-auth': 'true',
         'unsafe-perm': 'true'
-      };
+      }
 
       matchNpmrcOptions(options, npmrcContent)
     })
@@ -172,7 +184,7 @@ describe('test npm-setup-publish', () => {
       const options: Record<string, string> = {
         'always-auth': 'true',
         'unsafe-perm': 'true'
-      };
+      }
 
       matchNpmrcOptions(options, npmrcContent)
     })
@@ -195,13 +207,13 @@ describe('test npm-setup-publish', () => {
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const expectedValues: Record<string, string> = {
         'unsafe-perm': 'true'
-      };
+      }
 
       matchNpmrcOptions(expectedValues, npmrcContent)
 
       const missingValues: Record<string, string> = {
         'always-auth': 'true'
-      };
+      }
 
       negativeMatchNpmrcOptions(missingValues, npmrcContent)
     })
@@ -220,7 +232,14 @@ describe('test npm-setup-publish', () => {
       const deployKey = 'definitely an ssh key'
       const newNpmrc = 'always-auth = true'
 
-      await setupNpmPublish(email, username, deployKey, newNpmrc, '.npmrc', true)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
@@ -283,7 +302,14 @@ describe('test npm-setup-publish', () => {
       const deployKey = 'definitely an ssh key'
       const newNpmrc = null
 
-      await setupNpmPublish(email, username, deployKey, newNpmrc, '.npmrc', true)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
@@ -341,7 +367,14 @@ describe('test npm-setup-publish', () => {
       const deployKey = null
       const newNpmrc = 'always-auth = true'
 
-      await setupNpmPublish(email, username, deployKey, newNpmrc, '.npmrc', true)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(3)
@@ -372,13 +405,27 @@ describe('test npm-setup-publish', () => {
       const deployKey = null
       const newNpmrc = 'email = somename@example.com'
 
-      await setupNpmPublish(email, username, deployKey, newNpmrc, '.npmrc', false)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        false
+      )
 
       const mockExec = mocked(exec)
       expect(mockExec.mock.calls.length).toEqual(2)
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
-        ['config', 'set', '--location', 'project', 'email', 'somename@example.com'],
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'email',
+          'somename@example.com'
+        ],
         expect.objectContaining({cwd: repository})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
@@ -403,7 +450,14 @@ describe('test npm-setup-publish', () => {
       const deployKey = 'definitely an ssh key'
       const newNpmrc = 'always-auth = true'
 
-      await setupNpmPublish(email, username, deployKey, newNpmrc, npmrcPath, true)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        npmrcPath,
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
