@@ -73,9 +73,6 @@ export async function updateNpmrc(
       }
     }
   }
-
-  // Is this still needed?
-  await npmSet(npmrcDirectory, 'unsafe-perm', 'true')
 }
 
 export async function setupNpmPublish(

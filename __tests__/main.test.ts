@@ -133,8 +133,7 @@ describe('test npm-setup-publish', () => {
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        registry: 'https://artifactor.ee/registry',
-        'unsafe-perm': 'true'
+        registry: 'https://artifactor.ee/registry'
       }
 
       matchNpmrcOptions(options, npmrcContent)
@@ -156,8 +155,7 @@ describe('test npm-setup-publish', () => {
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        registry: 'https://artifactor.ee/registry',
-        'unsafe-perm': 'true'
+        registry: 'https://artifactor.ee/registry'
       }
 
       matchNpmrcOptions(options, npmrcContent)
@@ -180,40 +178,10 @@ describe('test npm-setup-publish', () => {
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        registry: 'https://artifactor.ee/registry',
-        'unsafe-perm': 'true'
-      }
-
-      matchNpmrcOptions(options, npmrcContent)
-    })
-
-    test('Updates npmrc unsafe-perm even if no config given', async () => {
-      const repository = path.join(runnerTempDir as string, 'repo')
-      const npmrcPath = path.join(repository, '.npmrc')
-      await fs.mkdir(repository, {recursive: true})
-      process.chdir(repository)
-      await fs.writeFile(npmrcPath, '')
-      await fs.writeFile('package.json', '{}')
-
-      const mockExec = mocked(exec)
-      mockExec.mockImplementation(async (cmd, args, options) => {
-        return await actualExec(cmd, args, options)
-      })
-
-      await updateNpmrc(npmrcPath, null)
-
-      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
-      const expectedValues: Record<string, string> = {
-        'unsafe-perm': 'true'
-      }
-
-      matchNpmrcOptions(expectedValues, npmrcContent)
-
-      const missingValues: Record<string, string> = {
         registry: 'https://artifactor.ee/registry'
       }
 
-      negativeMatchNpmrcOptions(missingValues, npmrcContent)
+      matchNpmrcOptions(options, npmrcContent)
     })
 
     test('rejects always-auth', async () => {
@@ -234,12 +202,7 @@ describe('test npm-setup-publish', () => {
         'always-auth=true\n//repo/:always-auth=true\n'
       )
 
-      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
-      const options: Record<string, string> = {
-        'unsafe-perm': 'true'
-      }
-
-      matchNpmrcOptions(options, npmrcContent)
+      expect(mockExec.mock.calls.length).toEqual(0)
 
       const mockWarning = mocked(warning)
       expect(mockWarning.mock.calls.length).toEqual(2)
@@ -281,7 +244,7 @@ describe('test npm-setup-publish', () => {
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(8)
+      expect(mockExec.mock.calls.length).toEqual(7)
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
@@ -296,24 +259,19 @@ describe('test npm-setup-publish', () => {
         expect.objectContaining({cwd: repository})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
-        'npm',
-        ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
-        expect.objectContaining({cwd: repository})
-      ])
-      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[3][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         [
           'config',
@@ -321,7 +279,7 @@ describe('test npm-setup-publish', () => {
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[7]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'remote',
@@ -358,27 +316,22 @@ describe('test npm-setup-publish', () => {
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(7)
+      expect(mockExec.mock.calls.length).toEqual(6)
 
       expect(mockExec.mock.calls[0]).toEqual([
-        'npm',
-        ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
-        expect.objectContaining({cwd: repository})
-      ])
-      expect(mockExec.mock.calls[1]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         [
           'config',
@@ -386,7 +339,7 @@ describe('test npm-setup-publish', () => {
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         [
           'remote',
@@ -418,7 +371,7 @@ describe('test npm-setup-publish', () => {
       )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(3)
+      expect(mockExec.mock.calls.length).toEqual(2)
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
@@ -433,11 +386,6 @@ describe('test npm-setup-publish', () => {
         expect.objectContaining({cwd: repository})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
-        'npm',
-        ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
-        expect.objectContaining({cwd: repository})
-      ])
-      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
@@ -463,7 +411,7 @@ describe('test npm-setup-publish', () => {
       )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(2)
+      expect(mockExec.mock.calls.length).toEqual(1)
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
         [
@@ -474,11 +422,6 @@ describe('test npm-setup-publish', () => {
           'email',
           'somename@example.com'
         ],
-        expect.objectContaining({cwd: repository})
-      ])
-      expect(mockExec.mock.calls[1]).toEqual([
-        'npm',
-        ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
         expect.objectContaining({cwd: repository})
       ])
     })
@@ -513,7 +456,7 @@ describe('test npm-setup-publish', () => {
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(8)
+      expect(mockExec.mock.calls.length).toEqual(7)
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
@@ -528,24 +471,19 @@ describe('test npm-setup-publish', () => {
         expect.objectContaining({cwd: npmrcDirectory})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
-        'npm',
-        ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
-        expect.objectContaining({cwd: npmrcDirectory})
-      ])
-      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', npmrcPath]
       ])
-      expect(mockExec.mock.calls[3][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         [
           'config',
@@ -553,7 +491,7 @@ describe('test npm-setup-publish', () => {
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[7]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'remote',
