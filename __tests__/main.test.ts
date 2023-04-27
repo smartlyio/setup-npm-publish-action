@@ -28,6 +28,10 @@ jest.mock('@actions/exec', () => ({
 
 const {exec: actualExec} = jest.requireActual('@actions/exec')
 
+function escapeRegExp(item: string) {
+  return item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function matchNpmrcOptions(
   values: Record<string, string>,
   npmrcContent: string
@@ -35,7 +39,7 @@ function matchNpmrcOptions(
   for (const key in values) {
     const value = values[key]
     expect(npmrcContent.toString()).toMatch(
-      new RegExp(`^${key}\\s*=\\s*${value}$`, 'm')
+      new RegExp(`^${escapeRegExp(key)}\\s*=\\s*${escapeRegExp(value)}$`, 'm')
     )
   }
 }
@@ -47,7 +51,7 @@ function negativeMatchNpmrcOptions(
   for (const key in values) {
     const value = values[key]
     expect(npmrcContent.toString()).not.toMatch(
-      new RegExp(`^${key}\\s*=\\s*${value}$`, 'm')
+      new RegExp(`^${escapeRegExp(key)}\\s*=\\s*${escapeRegExp(value)}$`, 'm')
     )
   }
 }
@@ -184,7 +188,7 @@ describe('test npm-setup-publish', () => {
       matchNpmrcOptions(options, npmrcContent)
     })
 
-    test('rejects always-auth', async () => {
+    test('Manually adds always-auth', async () => {
       const repository = path.join(runnerTempDir as string, 'repo')
       const npmrcPath = path.join(repository, '.npmrc')
       await fs.mkdir(repository, {recursive: true})
@@ -208,11 +212,19 @@ describe('test npm-setup-publish', () => {
       expect(mockWarning.mock.calls.length).toEqual(2)
 
       expect(mockWarning.mock.calls[0]).toEqual([
-        'always-auth is no longer a support npmrc key'
+        'always-auth is not supported by npm config set; writing it manually to the file'
       ])
       expect(mockWarning.mock.calls[1]).toEqual([
-        'always-auth is no longer a support npmrc key'
+        'always-auth is not supported by npm config set; writing it manually to the file'
       ])
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'always-auth': 'true',
+        '//repo/:always-auth': 'true'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
     })
   })
 

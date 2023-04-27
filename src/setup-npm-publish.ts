@@ -40,11 +40,6 @@ export async function npmSet(
   key: string,
   value: string
 ): Promise<void> {
-  if (key.match(/(^|:)always-auth$/)) {
-    core.warning('always-auth is no longer a support npmrc key')
-    return
-  }
-
   const options = {cwd}
 
   await exec.exec(
@@ -69,7 +64,14 @@ export async function updateNpmrc(
       if (match && match.groups) {
         const key = match.groups.key
         const value = match.groups.value
-        await npmSet(npmrcDirectory, key, value)
+        if (key.match(/(^|:)always-auth$/)) {
+          core.warning(
+            'always-auth is not supported by npm config set; writing it manually to the file'
+          )
+          await fs.appendFile(npmrcPath, `\n${key} = ${value}\n`)
+        } else {
+          await npmSet(npmrcDirectory, key, value)
+        }
       }
     }
   }
