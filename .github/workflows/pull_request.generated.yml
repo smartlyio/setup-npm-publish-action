@@ -63,7 +63,8 @@ jobs:
       uses: ./
       env:
         GIT_DEPLOY_KEY: not-a-real-key
-        AUTH_TOKEN_STRING: definitely-real-token
+        AUTH_TOKEN_STRING: |
+          email = devops@smartly.io
       with:
         email: ${{ env.EMAIL_INPUT }}
         username: ${{ env.USERNAME_INPUT }}
@@ -109,7 +110,8 @@ jobs:
       uses: ./
       env:
         GIT_DEPLOY_KEY: not-a-real-key
-        AUTH_TOKEN_STRING: definitely-real-token
+        AUTH_TOKEN_STRING: |
+          email = devops@smartly.io
       with:
         email: ${{ env.EMAIL_INPUT }}
         username: ${{ env.USERNAME_INPUT }}
@@ -161,7 +163,8 @@ jobs:
       uses: ./
       env:
         GIT_DEPLOY_KEY: not-a-real-key
-        AUTH_TOKEN_STRING: definitely-real-token
+        AUTH_TOKEN_STRING: |
+          email = devops@smartly.io
       with:
         email: ${{ env.EMAIL_INPUT }}
         username: ${{ env.USERNAME_INPUT }}
