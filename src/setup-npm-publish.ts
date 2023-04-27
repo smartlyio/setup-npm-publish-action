@@ -5,8 +5,6 @@ import * as path from 'path'
 import * as process from 'process'
 import {constants, promises as fs} from 'fs'
 
-export const UNSAFE_PERM = 'unsafe-perm = true'
-
 export function getEnv(name: string): string {
   const value: string | undefined = process.env[name]
   if (value === undefined) {
@@ -37,15 +35,25 @@ export async function sshKeyscan(): Promise<string> {
   return stdout
 }
 
-export async function updateNpmRc(
+export async function npmSet(
+  cwd: string,
+  key: string,
+  value: string
+): Promise<void> {
+  const options = {cwd}
+
+  await exec.exec(
+    'npm',
+    ['config', 'set', '--location', 'project', key, value],
+    options
+  )
+}
+
+export async function updateNpmrc(
   npmrcPath: string,
   contents: string | null
 ): Promise<void> {
   const npmrcDirectory = path.dirname(path.resolve(npmrcPath))
-
-  const options: exec.ExecOptions = {
-    cwd: npmrcDirectory
-  }
 
   if (contents) {
     const lines = contents.trim().split('\n')
@@ -56,21 +64,13 @@ export async function updateNpmRc(
       if (match && match.groups) {
         const key = match.groups.key
         const value = match.groups.value
-        await exec.exec(
-          'npm',
-          ['config', 'set', '--location', 'project', key, value],
-          options
-        )
+        await npmSet(npmrcDirectory, key, value)
       }
     }
   }
 
   // Is this still needed?
-  await exec.exec(
-    'npm',
-    ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
-    options
-  )
+  await npmSet(npmrcDirectory, 'unsafe-perm', 'true')
 }
 
 export async function setupNpmPublish(
@@ -86,7 +86,7 @@ export async function setupNpmPublish(
   const sshDir = path.dirname(keyPath)
   await fs.mkdir(sshDir, {recursive: true})
 
-  await updateNpmRc(npmrcPath, token)
+  await updateNpmrc(npmrcPath, token)
 
   core.info(`Marking ${npmrcPath} as unmodified to avoid committing the keys`)
   if (npmrcDidExist) {
