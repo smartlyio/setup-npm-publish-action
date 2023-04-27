@@ -28,8 +28,6 @@ jest.mock('@actions/exec', () => ({
 
 const {exec: actualExec} = jest.requireActual('@actions/exec')
 
-const UNSAFE_PERM = /unsafe-perm\s*=\s*true/
-
 function matchNpmrcOptions(
   values: Record<string, string>,
   npmrcContent: string
