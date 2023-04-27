@@ -41,6 +41,12 @@ export async function updateNpmRc(
   npmrcPath: string,
   contents: string | null
 ): Promise<void> {
+  const npmrcDirectory = path.dirname(path.resolve(npmrcPath))
+
+  const options: exec.ExecOptions = {
+    cwd: npmrcDirectory
+  }
+
   if (contents) {
     const lines = contents.trim().split('\n')
 
@@ -50,26 +56,21 @@ export async function updateNpmRc(
       if (match && match.groups) {
         const key = match.groups.key
         const value = match.groups.value
-        await exec.exec('npm', [
-          'config',
-          'set',
-          '--location',
-          'project',
-          key,
-          value
-        ])
+        await exec.exec(
+          'npm',
+          ['config', 'set', '--location', 'project', key, value],
+          options
+        )
       }
     }
   }
+
   // Is this still needed?
-  await exec.exec('npm', [
-    'config',
-    'set',
-    '--location',
-    'project',
-    'unsafe-perm',
-    'true'
-  ])
+  await exec.exec(
+    'npm',
+    ['config', 'set', '--location', 'project', 'unsafe-perm', 'true'],
+    options
+  )
 }
 
 export async function setupNpmPublish(
