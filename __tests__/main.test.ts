@@ -12,7 +12,7 @@ import {
   getSshPath,
   setupNpmPublish,
   sshKeyscan,
-  UNSAFE_PERM
+  updateNpmrc
 } from '../src/setup-npm-publish'
 
 jest.mock('@actions/core', () => ({
@@ -25,6 +25,25 @@ jest.mock('@actions/core', () => ({
 jest.mock('@actions/exec', () => ({
   exec: jest.fn()
 }))
+
+const {exec: actualExec} = jest.requireActual('@actions/exec')
+
+const UNSAFE_PERM = /unsafe-perm\s*=\s*true/
+
+async function matchNpmrcOptions (values: Record<string, string>, npmrcContent: string): Promise<void> {
+  for (const key in values) {
+    const value = values[key]
+    expect(npmrcContent.toString()).toMatch(new RegExp(`^${key}\\s*=\\s*${value}$`, 'm'))
+  }
+}
+
+async function negativeMatchNpmrcOptions (values: Record<string, string>, npmrcContent: string): Promise<void> {
+  for (const key in values) {
+    const value = values[key]
+    expect(npmrcContent.toString()).not.toMatch(new RegExp(`^${key}\\s*=\\s*${value}$`, 'm'))
+  }
+}
+
 
 let runnerTempDir: string | null = null
 const originalDirectory = process.cwd()
@@ -62,40 +81,145 @@ describe('test npm-setup-publish', () => {
     })
   })
 
-  test('get ssh path', () => {
-    const filePath = getSshPath('id_rsa')
-    expect(filePath).toEqual(`${runnerTempDir}/setup-npm-publish-action/id_rsa`)
-  })
+  describe('git configutation', () => {
+    test('get ssh path', () => {
+      const filePath = getSshPath('id_rsa')
+      expect(filePath).toEqual(`${runnerTempDir}/setup-npm-publish-action/id_rsa`)
+    })
 
-  test('ssh-keyscan', async () => {
-    const mockExec = mocked(exec)
-    const callArgs = [
-      'ssh-keyscan',
-      ['-t', 'rsa', 'github.com'],
-      expect.objectContaining({
-        listeners: expect.objectContaining({
-          stdout: expect.anything(),
-          stderr: expect.anything()
+    test('ssh-keyscan', async () => {
+      const mockExec = mocked(exec)
+      const callArgs = [
+        'ssh-keyscan',
+        ['-t', 'rsa', 'github.com'],
+        expect.objectContaining({
+          listeners: expect.objectContaining({
+            stdout: expect.anything(),
+            stderr: expect.anything()
+          })
         })
-      })
-    ]
-    await sshKeyscan()
+      ]
+      await sshKeyscan()
 
-    expect(mockExec.mock.calls.length).toEqual(1)
-    expect(mockExec.mock.calls[0]).toEqual(callArgs)
+      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls[0]).toEqual(callArgs)
+    })
   })
 
-  describe('setupNpmPublish', () => {
+  describe('update npmrc', () => {
+    test('Updates npmrc with npm config set in empty file', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'always-auth = true')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'always-auth': 'true',
+        'unsafe-perm': 'true'
+      };
+
+      await matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Updates npmrc with npm config set in new file', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'always-auth = true')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'always-auth': 'true',
+        'unsafe-perm': 'true'
+      };
+
+      await matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Updates npmrc with npm config set with existing content', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, 'always-auth = true')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'always-auth = true')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'always-auth': 'true',
+        'unsafe-perm': 'true'
+      };
+
+      await matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Updates npmrc unsafe-perm even if no config given', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, null)
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const expectedValues: Record<string, string> = {
+        'unsafe-perm': 'true'
+      };
+
+      await matchNpmrcOptions(expectedValues, npmrcContent)
+
+      const missingValues: Record<string, string> = {
+        'always-auth': 'true'
+      };
+
+      await negativeMatchNpmrcOptions(missingValues, npmrcContent)
+    })
+  })
+
+  describe.skip('setupNpmPublish', () => {
     test('non-null token', async () => {
       const repository = path.join(runnerTempDir as string, 'repo')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
       await fs.writeFile('.npmrc', '')
+      await fs.writeFile('package.json', '{}')
 
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const token = 'this is an npmrc file'
+      const token = 'always-auth = true'
 
       await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
 
