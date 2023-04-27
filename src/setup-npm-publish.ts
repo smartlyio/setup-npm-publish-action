@@ -40,6 +40,11 @@ export async function npmSet(
   key: string,
   value: string
 ): Promise<void> {
+  if (key.match(/(^|:)always-auth$/)) {
+    core.warning('always-auth is no longer a support npmrc key')
+    return
+  }
+
   const options = {cwd}
 
   await exec.exec(

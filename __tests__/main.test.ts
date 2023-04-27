@@ -1,5 +1,5 @@
 // import {core} from '@actions/core';
-import {getState} from '@actions/core'
+import {getState, warning} from '@actions/core'
 import {exec} from '@actions/exec'
 import * as fssync from 'fs'
 import {promises as fs} from 'fs'
@@ -129,11 +129,11 @@ describe('test npm-setup-publish', () => {
         return await actualExec(cmd, args, options)
       })
 
-      await updateNpmrc(npmrcPath, 'always-auth = true')
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        'always-auth': 'true',
+        registry: 'https://artifactor.ee/registry',
         'unsafe-perm': 'true'
       }
 
@@ -152,11 +152,11 @@ describe('test npm-setup-publish', () => {
         return await actualExec(cmd, args, options)
       })
 
-      await updateNpmrc(npmrcPath, 'always-auth = true')
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        'always-auth': 'true',
+        registry: 'https://artifactor.ee/registry',
         'unsafe-perm': 'true'
       }
 
@@ -168,7 +168,7 @@ describe('test npm-setup-publish', () => {
       const npmrcPath = path.join(repository, '.npmrc')
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
-      await fs.writeFile(npmrcPath, 'always-auth = true')
+      await fs.writeFile(npmrcPath, 'registry = https://artifactor.ee/registry')
       await fs.writeFile('package.json', '{}')
 
       const mockExec = mocked(exec)
@@ -176,11 +176,11 @@ describe('test npm-setup-publish', () => {
         return await actualExec(cmd, args, options)
       })
 
-      await updateNpmrc(npmrcPath, 'always-auth = true')
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
       const options: Record<string, string> = {
-        'always-auth': 'true',
+        registry: 'https://artifactor.ee/registry',
         'unsafe-perm': 'true'
       }
 
@@ -210,10 +210,46 @@ describe('test npm-setup-publish', () => {
       matchNpmrcOptions(expectedValues, npmrcContent)
 
       const missingValues: Record<string, string> = {
-        'always-auth': 'true'
+        registry: 'https://artifactor.ee/registry'
       }
 
       negativeMatchNpmrcOptions(missingValues, npmrcContent)
+    })
+
+    test('rejects always-auth', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(
+        npmrcPath,
+        'always-auth=true\n//repo/:always-auth=true\n'
+      )
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'unsafe-perm': 'true'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+
+      const mockWarning = mocked(warning)
+      expect(mockWarning.mock.calls.length).toEqual(2)
+
+      expect(mockWarning.mock.calls[0]).toEqual([
+        'always-auth is no longer a support npmrc key'
+      ])
+      expect(mockWarning.mock.calls[1]).toEqual([
+        'always-auth is no longer a support npmrc key'
+      ])
     })
   })
 
@@ -228,7 +264,7 @@ describe('test npm-setup-publish', () => {
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const newNpmrc = 'always-auth = true'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
       await setupNpmPublish(
         email,
@@ -249,7 +285,14 @@ describe('test npm-setup-publish', () => {
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
-        ['config', 'set', '--location', 'project', 'always-auth', 'true'],
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
         expect.objectContaining({cwd: repository})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
@@ -363,7 +406,7 @@ describe('test npm-setup-publish', () => {
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = null
-      const newNpmrc = 'always-auth = true'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
       await setupNpmPublish(
         email,
@@ -379,7 +422,14 @@ describe('test npm-setup-publish', () => {
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
-        ['config', 'set', '--location', 'project', 'always-auth', 'true'],
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
         expect.objectContaining({cwd: repository})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
@@ -446,7 +496,7 @@ describe('test npm-setup-publish', () => {
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const newNpmrc = 'always-auth = true'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
       await setupNpmPublish(
         email,
@@ -467,7 +517,14 @@ describe('test npm-setup-publish', () => {
 
       expect(mockExec.mock.calls[0]).toEqual([
         'npm',
-        ['config', 'set', '--location', 'project', 'always-auth', 'true'],
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
         expect.objectContaining({cwd: npmrcDirectory})
       ])
       expect(mockExec.mock.calls[1]).toEqual([
