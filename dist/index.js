@@ -130,13 +130,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanupNpmPublish = exports.setupNpmPublish = exports.sshKeyscan = exports.getSshPath = exports.getEnv = exports.UNSAFE_PERM = void 0;
+exports.cleanupNpmPublish = exports.setupNpmPublish = exports.updateNpmrc = exports.npmSet = exports.sshKeyscan = exports.getSshPath = exports.getEnv = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 const path = __importStar(__nccwpck_require__(17));
 const process = __importStar(__nccwpck_require__(282));
 const fs_1 = __nccwpck_require__(147);
-exports.UNSAFE_PERM = 'unsafe-perm = true';
 function getEnv(name) {
     const value = process.env[name];
     if (value === undefined) {
@@ -169,18 +168,44 @@ function sshKeyscan() {
     });
 }
 exports.sshKeyscan = sshKeyscan;
+function npmSet(cwd, key, value) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const options = { cwd };
+        yield exec.exec('npm', ['config', 'set', '--location', 'project', key, value], options);
+    });
+}
+exports.npmSet = npmSet;
+function updateNpmrc(npmrcPath, contents) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const npmrcDirectory = path.dirname(path.resolve(npmrcPath));
+        if (contents) {
+            const lines = contents.trim().split('\n');
+            core.info(`Updating npm configuration ${npmrcPath}`);
+            for (const line of lines) {
+                const match = line.match(/^(?<key>[^=]+?)\s*=\s*(?<value>.*)$/);
+                if (match && match.groups) {
+                    const key = match.groups.key;
+                    const value = match.groups.value;
+                    if (key.match(/(^|:)always-auth$/)) {
+                        core.warning('always-auth is not supported by npm config set; writing it manually to the file');
+                        yield fs_1.promises.appendFile(npmrcPath, `\n${key} = ${value}\n`);
+                    }
+                    else {
+                        yield npmSet(npmrcDirectory, key, value);
+                    }
+                }
+            }
+        }
+    });
+}
+exports.updateNpmrc = updateNpmrc;
 function setupNpmPublish(email, username, deployKey, token, npmrcPath, npmrcDidExist) {
     return __awaiter(this, void 0, void 0, function* () {
         const keyPath = getSshPath('id_rsa');
         const knownHostsPath = getSshPath('known_hosts');
         const sshDir = path.dirname(keyPath);
         yield fs_1.promises.mkdir(sshDir, { recursive: true });
-        if (token) {
-            core.info(`Writing token file to ${npmrcPath}`);
-            yield fs_1.promises.writeFile(npmrcPath, token);
-        }
-        // Is this still needed?
-        yield fs_1.promises.appendFile(npmrcPath, `\n${exports.UNSAFE_PERM}\n`);
+        yield updateNpmrc(npmrcPath, token);
         core.info(`Marking ${npmrcPath} as unmodified to avoid committing the keys`);
         if (npmrcDidExist) {
             yield exec.exec('git', ['update-index', '--assume-unchanged', npmrcPath]);
