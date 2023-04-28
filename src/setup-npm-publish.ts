@@ -60,7 +60,12 @@ export async function updateNpmrc(
 
     core.info(`Updating npm configuration ${npmrcPath}`)
     for (const line of lines) {
-      const match = line.match(/^(?<key>[^=]+?)\s*=\s*(?<value>.*)$/)
+      if (line.match(/^\s*#/)) {
+        continue
+      }
+      const match = line.match(
+        /^(?<key>[^=]+?)\s*=\s*(?<value>.*?)(?<comment> #.*)?$/
+      )
       if (match && match.groups) {
         const key = match.groups.key
         const value = match.groups.value

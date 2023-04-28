@@ -120,6 +120,48 @@ describe('test npm-setup-publish', () => {
   })
 
   describe('update npmrc', () => {
+    test('Updates multiline npmrc without comments', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
+
+      const newNpmrcContent = `
+registry = https://artifactor.ee/registry
+# test comment
+  # another comment = something
+email = test@example.com # more comments
+`
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, newNpmrcContent)
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      console.log(npmrcContent)
+      const options: Record<string, string> = {
+        registry: 'https://artifactor.ee/registry',
+        email: 'test@example.com'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+
+      expect(npmrcContent.toString()).not.toMatch(
+        new RegExp(`test comment`, 'm')
+      )
+      expect(npmrcContent.toString()).not.toMatch(
+        new RegExp(`another comment`, 'm')
+      )
+      expect(npmrcContent.toString()).not.toMatch(
+        new RegExp(`more comments`, 'm')
+      )
+    })
+
     test('Updates npmrc with npm config set in empty file', async () => {
       const repository = path.join(runnerTempDir as string, 'repo')
       const npmrcPath = path.join(repository, '.npmrc')
