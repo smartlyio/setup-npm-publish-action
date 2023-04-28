@@ -143,7 +143,6 @@ email = test@example.com # more comments
       await updateNpmrc(npmrcPath, newNpmrcContent)
 
       const npmrcContent = (await fs.readFile(npmrcPath)).toString()
-      console.log(npmrcContent)
       const options: Record<string, string> = {
         registry: 'https://artifactor.ee/registry',
         email: 'test@example.com'
