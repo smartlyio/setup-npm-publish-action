@@ -5,8 +5,6 @@ import * as path from 'path'
 import * as process from 'process'
 import {constants, promises as fs} from 'fs'
 
-export const UNSAFE_PERM = 'unsafe-perm = true'
-
 export function getEnv(name: string): string {
   const value: string | undefined = process.env[name]
   if (value === undefined) {
@@ -37,6 +35,48 @@ export async function sshKeyscan(): Promise<string> {
   return stdout
 }
 
+export async function npmSet(
+  cwd: string,
+  key: string,
+  value: string
+): Promise<void> {
+  const options = {cwd}
+
+  await exec.exec(
+    'npm',
+    ['config', 'set', '--location', 'project', key, value],
+    options
+  )
+}
+
+export async function updateNpmrc(
+  npmrcPath: string,
+  contents: string | null
+): Promise<void> {
+  const npmrcDirectory = path.dirname(path.resolve(npmrcPath))
+
+  if (contents) {
+    const lines = contents.trim().split('\n')
+
+    core.info(`Updating npm configuration ${npmrcPath}`)
+    for (const line of lines) {
+      const match = line.match(/^(?<key>[^=]+?)\s*=\s*(?<value>.*)$/)
+      if (match && match.groups) {
+        const key = match.groups.key
+        const value = match.groups.value
+        if (key.match(/(^|:)always-auth$/)) {
+          core.warning(
+            'always-auth is not supported by npm config set; writing it manually to the file'
+          )
+          await fs.appendFile(npmrcPath, `\n${key} = ${value}\n`)
+        } else {
+          await npmSet(npmrcDirectory, key, value)
+        }
+      }
+    }
+  }
+}
+
 export async function setupNpmPublish(
   email: string,
   username: string,
@@ -50,12 +90,7 @@ export async function setupNpmPublish(
   const sshDir = path.dirname(keyPath)
   await fs.mkdir(sshDir, {recursive: true})
 
-  if (token) {
-    core.info(`Writing token file to ${npmrcPath}`)
-    await fs.writeFile(npmrcPath, token)
-  }
-  // Is this still needed?
-  await fs.appendFile(npmrcPath, `\n${UNSAFE_PERM}\n`)
+  await updateNpmrc(npmrcPath, token)
 
   core.info(`Marking ${npmrcPath} as unmodified to avoid committing the keys`)
   if (npmrcDidExist) {

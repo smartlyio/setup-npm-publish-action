@@ -1,5 +1,5 @@
 // import {core} from '@actions/core';
-import {getState} from '@actions/core'
+import {getState, warning} from '@actions/core'
 import {exec} from '@actions/exec'
 import * as fssync from 'fs'
 import {promises as fs} from 'fs'
@@ -12,7 +12,7 @@ import {
   getSshPath,
   setupNpmPublish,
   sshKeyscan,
-  UNSAFE_PERM
+  updateNpmrc
 } from '../src/setup-npm-publish'
 
 jest.mock('@actions/core', () => ({
@@ -25,6 +25,36 @@ jest.mock('@actions/core', () => ({
 jest.mock('@actions/exec', () => ({
   exec: jest.fn()
 }))
+
+const {exec: actualExec} = jest.requireActual('@actions/exec')
+
+function escapeRegExp(item: string) {
+  return item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function matchNpmrcOptions(
+  values: Record<string, string>,
+  npmrcContent: string
+): void {
+  for (const key in values) {
+    const value = values[key]
+    expect(npmrcContent.toString()).toMatch(
+      new RegExp(`^${escapeRegExp(key)}\\s*=\\s*${escapeRegExp(value)}$`, 'm')
+    )
+  }
+}
+
+function negativeMatchNpmrcOptions(
+  values: Record<string, string>,
+  npmrcContent: string
+): void {
+  for (const key in values) {
+    const value = values[key]
+    expect(npmrcContent.toString()).not.toMatch(
+      new RegExp(`^${escapeRegExp(key)}\\s*=\\s*${escapeRegExp(value)}$`, 'm')
+    )
+  }
+}
 
 let runnerTempDir: string | null = null
 const originalDirectory = process.cwd()
@@ -62,27 +92,140 @@ describe('test npm-setup-publish', () => {
     })
   })
 
-  test('get ssh path', () => {
-    const filePath = getSshPath('id_rsa')
-    expect(filePath).toEqual(`${runnerTempDir}/setup-npm-publish-action/id_rsa`)
+  describe('git configutation', () => {
+    test('get ssh path', () => {
+      const filePath = getSshPath('id_rsa')
+      expect(filePath).toEqual(
+        `${runnerTempDir}/setup-npm-publish-action/id_rsa`
+      )
+    })
+
+    test('ssh-keyscan', async () => {
+      const mockExec = mocked(exec)
+      const callArgs = [
+        'ssh-keyscan',
+        ['-t', 'rsa', 'github.com'],
+        expect.objectContaining({
+          listeners: expect.objectContaining({
+            stdout: expect.anything(),
+            stderr: expect.anything()
+          })
+        })
+      ]
+      await sshKeyscan()
+
+      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls[0]).toEqual(callArgs)
+    })
   })
 
-  test('ssh-keyscan', async () => {
-    const mockExec = mocked(exec)
-    const callArgs = [
-      'ssh-keyscan',
-      ['-t', 'rsa', 'github.com'],
-      expect.objectContaining({
-        listeners: expect.objectContaining({
-          stdout: expect.anything(),
-          stderr: expect.anything()
-        })
-      })
-    ]
-    await sshKeyscan()
+  describe('update npmrc', () => {
+    test('Updates npmrc with npm config set in empty file', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
 
-    expect(mockExec.mock.calls.length).toEqual(1)
-    expect(mockExec.mock.calls[0]).toEqual(callArgs)
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        registry: 'https://artifactor.ee/registry'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Updates npmrc with npm config set in new file', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        registry: 'https://artifactor.ee/registry'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Updates npmrc with npm config set with existing content', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, 'registry = https://artifactor.ee/registry')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(npmrcPath, 'registry = https://artifactor.ee/registry')
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        registry: 'https://artifactor.ee/registry'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+    })
+
+    test('Manually adds always-auth', async () => {
+      const repository = path.join(runnerTempDir as string, 'repo')
+      const npmrcPath = path.join(repository, '.npmrc')
+      await fs.mkdir(repository, {recursive: true})
+      process.chdir(repository)
+      await fs.writeFile(npmrcPath, '')
+      await fs.writeFile('package.json', '{}')
+
+      const mockExec = mocked(exec)
+      mockExec.mockImplementation(async (cmd, args, options) => {
+        return await actualExec(cmd, args, options)
+      })
+
+      await updateNpmrc(
+        npmrcPath,
+        'always-auth=true\n//repo/:always-auth=true\n'
+      )
+
+      expect(mockExec.mock.calls.length).toEqual(0)
+
+      const mockWarning = mocked(warning)
+      expect(mockWarning.mock.calls.length).toEqual(2)
+
+      expect(mockWarning.mock.calls[0]).toEqual([
+        'always-auth is not supported by npm config set; writing it manually to the file'
+      ])
+      expect(mockWarning.mock.calls[1]).toEqual([
+        'always-auth is not supported by npm config set; writing it manually to the file'
+      ])
+
+      const npmrcContent = (await fs.readFile(npmrcPath)).toString()
+      const options: Record<string, string> = {
+        'always-auth': 'true',
+        '//repo/:always-auth': 'true'
+      }
+
+      matchNpmrcOptions(options, npmrcContent)
+    })
   })
 
   describe('setupNpmPublish', () => {
@@ -91,18 +234,21 @@ describe('test npm-setup-publish', () => {
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
       await fs.writeFile('.npmrc', '')
+      await fs.writeFile('package.json', '{}')
 
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const token = 'this is an npmrc file'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
-      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
-
-      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
-      expect(tokenData.toString()).toEqual(`${token}
-${UNSAFE_PERM}
-`)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
@@ -110,22 +256,34 @@ ${UNSAFE_PERM}
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(6)
+      expect(mockExec.mock.calls.length).toEqual(7)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
+        expect.objectContaining({cwd: repository})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[2]).toEqual([
+      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         [
           'config',
@@ -133,7 +291,7 @@ ${UNSAFE_PERM}
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'remote',
@@ -153,14 +311,16 @@ ${UNSAFE_PERM}
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const token = null
+      const newNpmrc = null
 
-      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
-
-      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
-      expect(tokenData.toString()).toEqual(`
-${UNSAFE_PERM}
-`)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
@@ -211,19 +371,33 @@ ${UNSAFE_PERM}
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = null
-      const token = 'this is an npmrc file'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
-      await setupNpmPublish(email, username, deployKey, token, '.npmrc', true)
-
-      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
-      expect(tokenData.toString()).toEqual(`${token}
-${UNSAFE_PERM}
-`)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        true
+      )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(2)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
+        expect.objectContaining({cwd: repository})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
@@ -237,23 +411,38 @@ ${UNSAFE_PERM}
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = null
-      const token = 'this is an npmrc file'
+      const newNpmrc = 'email = somename@example.com'
 
-      await setupNpmPublish(email, username, deployKey, token, '.npmrc', false)
-
-      const tokenData = await fs.readFile(path.join(repository, '.npmrc'))
-      expect(tokenData.toString()).toEqual(`${token}
-${UNSAFE_PERM}
-`)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        '.npmrc',
+        false
+      )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(0)
+      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'email',
+          'somename@example.com'
+        ],
+        expect.objectContaining({cwd: repository})
+      ])
     })
 
     test('non-root npmrc', async () => {
       const repository = path.join(runnerTempDir as string, 'repo')
       const directory = `testdir`
       const npmrcPath = path.join(directory, `.npmrc`)
+      const npmrcDirectory = path.resolve(path.join(repository, directory))
       await fs.mkdir(repository, {recursive: true})
       process.chdir(repository)
       await fs.mkdir(directory, {recursive: true})
@@ -262,14 +451,16 @@ ${UNSAFE_PERM}
       const email = 'user@example.com'
       const username = 'Example User'
       const deployKey = 'definitely an ssh key'
-      const token = 'this is an npmrc file'
+      const newNpmrc = 'registry = https://artifactor.ee/registry'
 
-      await setupNpmPublish(email, username, deployKey, token, npmrcPath, true)
-
-      const tokenData = await fs.readFile(path.join(repository, npmrcPath))
-      expect(tokenData.toString()).toEqual(`${token}
-${UNSAFE_PERM}
-`)
+      await setupNpmPublish(
+        email,
+        username,
+        deployKey,
+        newNpmrc,
+        npmrcPath,
+        true
+      )
 
       const sshKeyData = await fs.readFile(
         path.join(runnerTempDir as string, 'setup-npm-publish-action', 'id_rsa')
@@ -277,22 +468,34 @@ ${UNSAFE_PERM}
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(6)
+      expect(mockExec.mock.calls.length).toEqual(7)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        [
+          'config',
+          'set',
+          '--location',
+          'project',
+          'registry',
+          'https://artifactor.ee/registry'
+        ],
+        expect.objectContaining({cwd: npmrcDirectory})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', npmrcPath]
       ])
-      expect(mockExec.mock.calls[1][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[2]).toEqual([
+      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[3]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         [
           'config',
@@ -300,7 +503,7 @@ ${UNSAFE_PERM}
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'remote',
