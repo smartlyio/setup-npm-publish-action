@@ -33,10 +33,13 @@ test-multiple-times:
     env:
       EXPECTED_TOKEN: "token-1"
     run: |
+      cat .npmrc
       grep "^\/\/example.com\/npm:_authToken=$EXPECTED_TOKEN" .npmrc
       count="$(grep "^\/\/example.com\/npm:_authToken=" .npmrc | wc -l)"
       [ "$count" -eq 1 ]
   @import ../steps/test_execute (auth_token: "second-time")
+  - run: |
+      cat .npmrc
 
 test-cleanup-non-repo:
   runs-on: <%= ubuntu_version %>
