@@ -44,6 +44,11 @@ export async function npmSet(
 
   await exec.exec(
     'npm',
+    ['config', 'delete', '--location', 'project', key],
+    options
+  )
+  await exec.exec(
+    'npm',
     ['config', 'set', '--location', 'project', key, value],
     options
   )

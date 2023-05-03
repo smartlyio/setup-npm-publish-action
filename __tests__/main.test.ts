@@ -297,9 +297,14 @@ email = test@example.com # more comments
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(7)
+      expect(mockExec.mock.calls.length).toEqual(8)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        ['config', 'delete', '--location', 'project', 'registry'],
+        expect.objectContaining({cwd: repository})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'npm',
         [
           'config',
@@ -311,20 +316,20 @@ email = test@example.com # more comments
         ],
         expect.objectContaining({cwd: repository})
       ])
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
-      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[3][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'config',
@@ -332,7 +337,7 @@ email = test@example.com # more comments
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[7]).toEqual([
         'git',
         [
           'remote',
@@ -424,9 +429,14 @@ email = test@example.com # more comments
       )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(2)
+      expect(mockExec.mock.calls.length).toEqual(3)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        ['config', 'delete', '--location', 'project', 'registry'],
+        expect.objectContaining({cwd: repository})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'npm',
         [
           'config',
@@ -438,7 +448,7 @@ email = test@example.com # more comments
         ],
         expect.objectContaining({cwd: repository})
       ])
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', '.npmrc']
       ])
@@ -464,8 +474,13 @@ email = test@example.com # more comments
       )
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(1)
+      expect(mockExec.mock.calls.length).toEqual(2)
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        ['config', 'delete', '--location', 'project', 'email'],
+        expect.objectContaining({cwd: repository})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'npm',
         [
           'config',
@@ -509,9 +524,14 @@ email = test@example.com # more comments
       expect(sshKeyData.toString()).toEqual(`${deployKey}\n`)
 
       const mockExec = mocked(exec)
-      expect(mockExec.mock.calls.length).toEqual(7)
+      expect(mockExec.mock.calls.length).toEqual(8)
 
       expect(mockExec.mock.calls[0]).toEqual([
+        'npm',
+        ['config', 'delete', '--location', 'project', 'registry'],
+        expect.objectContaining({cwd: npmrcDirectory})
+      ])
+      expect(mockExec.mock.calls[1]).toEqual([
         'npm',
         [
           'config',
@@ -523,20 +543,20 @@ email = test@example.com # more comments
         ],
         expect.objectContaining({cwd: npmrcDirectory})
       ])
-      expect(mockExec.mock.calls[1]).toEqual([
+      expect(mockExec.mock.calls[2]).toEqual([
         'git',
         ['update-index', '--assume-unchanged', npmrcPath]
       ])
-      expect(mockExec.mock.calls[2][0]).toEqual('ssh-keyscan')
-      expect(mockExec.mock.calls[3]).toEqual([
+      expect(mockExec.mock.calls[3][0]).toEqual('ssh-keyscan')
+      expect(mockExec.mock.calls[4]).toEqual([
         'git',
         ['config', 'user.email', email]
       ])
-      expect(mockExec.mock.calls[4]).toEqual([
+      expect(mockExec.mock.calls[5]).toEqual([
         'git',
         ['config', 'user.name', username]
       ])
-      expect(mockExec.mock.calls[5]).toEqual([
+      expect(mockExec.mock.calls[6]).toEqual([
         'git',
         [
           'config',
@@ -544,7 +564,7 @@ email = test@example.com # more comments
           expect.stringContaining('UserKnownHostsFile')
         ]
       ])
-      expect(mockExec.mock.calls[6]).toEqual([
+      expect(mockExec.mock.calls[7]).toEqual([
         'git',
         [
           'remote',
