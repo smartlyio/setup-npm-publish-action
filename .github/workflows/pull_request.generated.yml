@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
     - name: Set Node.js 16.x
@@ -40,7 +40,7 @@ jobs:
         npm run package
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
@@ -87,7 +87,7 @@ jobs:
         [[ "$(git config core.sshCommand)" == *UserKnownHostsFile* ]]
 
   test-cleanup-non-repo:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
@@ -135,7 +135,7 @@ jobs:
     - run: rm -rf .git
 
   test-missing-npmrc:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
@@ -191,14 +191,14 @@ jobs:
       - test
       - test-cleanup-non-repo
       - test-missing-npmrc
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - run: |
           echo "Ok"
         shell: bash
 
   release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: "Build and release action"
     needs: [build, test-all]
     steps:
