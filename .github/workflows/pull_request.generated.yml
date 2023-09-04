@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -45,7 +45,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -92,7 +92,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -140,7 +140,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set Node.js 16.x
       uses: actions/setup-node@v3
       with:
@@ -202,7 +202,7 @@ jobs:
     name: "Build and release action"
     needs: [build, test-all]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
