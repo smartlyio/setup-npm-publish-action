@@ -27,7 +27,7 @@ The action is used as follows:
 - uses: smartlyio/setup-npm-publish-action@v1
   env:
     AUTH_TOKEN_STRING: |
-      registry = https://smartly.af/artifactory/api/npm/npm/
-      //smartly.af/artifactory/api/npm/npm/:_authToken=${{ secrets.ARTIFACTORY_TOKEN }}
+      registry = https://myregistry.io/artifactory/api/npm/npm/
+      //myregistry.io/artifactory/api/npm/npm/:_authToken=${{ secrets.NPM_TOKEN }}
     GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
 ```
