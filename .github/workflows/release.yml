@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set Node.js 20.x
       uses: actions/setup-node@v4
       with:
@@ -36,7 +36,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set Node.js 20.x
       uses: actions/setup-node@v4
       with:
@@ -83,7 +83,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set Node.js 20.x
       uses: actions/setup-node@v4
       with:
@@ -131,7 +131,7 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set Node.js 20.x
       uses: actions/setup-node@v4
       with:
@@ -193,7 +193,7 @@ jobs:
     name: "Build and release action"
     needs: [build, test-all]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           persist-credentials: true
