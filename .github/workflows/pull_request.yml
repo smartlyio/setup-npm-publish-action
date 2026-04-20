@@ -8,9 +8,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
     - name: Set Node.js 20.x
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       with:
         node-version: 24.x
     - name: "Install"
@@ -36,9 +36,9 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
     - name: Set Node.js 20.x
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       with:
         node-version: 24.x
     - name: "Build action for test"
@@ -47,7 +47,7 @@ jobs:
         npm run build
         npm run package
         git clean -fXd
-    - uses: webiny/action-post-run@3.1.0
+    - uses: webiny/action-post-run@2a0e96f0e55f0e698cf2a3d85670e3577ae30a30 # 3.1.0
       with:
         run: .github/scripts/test_post.sh
     - name: Test executing the action
@@ -83,9 +83,9 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
     - name: Set Node.js 20.x
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       with:
         node-version: 24.x
     - name: "Build action for test"
@@ -94,7 +94,7 @@ jobs:
         npm run build
         npm run package
         git clean -fXd
-    - uses: webiny/action-post-run@3.1.0
+    - uses: webiny/action-post-run@2a0e96f0e55f0e698cf2a3d85670e3577ae30a30 # 3.1.0
       with:
         run: .github/scripts/test_missing_npmrc_post.sh
     - name: Test executing the action
@@ -131,9 +131,9 @@ jobs:
       EMAIL_INPUT: test@example.com
       USERNAME_INPUT: example-test
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
     - name: Set Node.js 20.x
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       with:
         node-version: 24.x
     - name: "Build action for test"
@@ -147,7 +147,7 @@ jobs:
         git config --global user.name "Testing"
         git rm .npmrc
         git commit -m "mark removed npmrc file"
-    - uses: webiny/action-post-run@3.1.0
+    - uses: webiny/action-post-run@2a0e96f0e55f0e698cf2a3d85670e3577ae30a30 # 3.1.0
       with:
         run: .github/scripts/test_missing_npmrc_post.sh
     - name: Test executing the action
@@ -182,14 +182,14 @@ jobs:
     name: "Build and release action"
     needs: [build, test, test-cleanup-non-repo, test-missing-npmrc]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
           persist-credentials: true
       - name: Configure git
-        uses: smartlyio/github-actions@git-init-userinfo-v1
+        uses: smartlyio/github-actions@4ef49912877febb62867891d42a1205190fb2ab0 # git-init-userinfo-v1
       - name: Release flow
-        uses: smartlyio/github-actions@release-action-node-v1
+        uses: smartlyio/github-actions@d6b502d53ac699d0c7d44430c685a44e8ab24140 # release-action-node-v1
         with:
           dry_run: true
           token: "${{ secrets.GITHUB_TOKEN }}"
